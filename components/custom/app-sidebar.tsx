@@ -75,12 +75,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   by Vercel.
                 </CardDescription>
               </CardHeader>
-              <CardFooter className="p-0">
-                <Button size="sm" className="w-full h-8 py-0 justify-start">
-                  <VercelIcon size={16} />
-                  Deploy with Vercel
-                </Button>
-              </CardFooter>
+              <CardFooter className="p-0">...</CardFooter>
             </Card>
           </SidebarGroupContent>
         </SidebarGroup>
