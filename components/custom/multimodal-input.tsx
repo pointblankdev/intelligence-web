@@ -24,14 +24,15 @@ import { Textarea } from '../ui/textarea';
 
 const suggestedActions = [
   {
-    title: 'What is the weather',
-    label: 'in San Francisco?',
-    action: 'What is the weather in San Francisco?',
+    title: 'Create a new wallet',
+    label: 'Import existing or create a new wallet',
+    action: 'Create a new wallet for me.',
   },
   {
-    title: 'Help me draft an essay',
-    label: 'about Silicon Valley',
-    action: 'Help me draft an essay about Silicon Valley',
+    title: 'What are you able to do?',
+    label: 'Do you know how to use Stacks?',
+    action:
+      'What are you able to do and how can you help me with my Stacks wallet?',
   },
 ];
 

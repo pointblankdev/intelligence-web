@@ -29,7 +29,7 @@ export const name = 'bns';
 export const bnsTool: CoreTool<typeof bnsParamsSchema, string[] | BnsNameInfo> =
   {
     parameters: bnsParamsSchema,
-    description: `Query the Stacks Blockchain Naming Service (BNS).
+    description: `Query the Stacks Bitcoin Naming Service (BNS).
 Available operations:
 - getNamesForAddress: Get all BNS names owned by a Stacks address
 - getNameInfo: Get detailed information about a specific BNS name`,
