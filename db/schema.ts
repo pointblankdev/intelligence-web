@@ -10,6 +10,7 @@ import {
   primaryKey,
   foreignKey,
   boolean,
+  integer,
 } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('User', {
@@ -78,3 +79,17 @@ export const Suggestion = pgTable(
 );
 
 export type Suggestion = InferSelectModel<typeof Suggestion>;
+
+export const wallet = pgTable('wallet', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  name: varchar('name', { length: 64 }).notNull(),
+  userId: uuid('userId')
+    .notNull()
+    .references(() => user.id),
+  encryptedSeed: varchar('encryptedSeed', { length: 1024 }).notNull(),
+  metadata: json('metadata'),
+  lastActive: timestamp('lastActive').notNull().defaultNow(),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+});
+
+export type WalletMetadata = InferSelectModel<typeof wallet>;

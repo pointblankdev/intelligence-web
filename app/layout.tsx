@@ -1,9 +1,12 @@
 import { Metadata } from 'next';
+import { Ysabeau_Infant } from 'next/font/google';
 import { Toaster } from 'sonner';
 
 import { ThemeProvider } from '@/components/custom/theme-provider';
-
 import './globals.css';
+import { cn } from '@/lib/utils';
+
+const font = Ysabeau_Infant({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://chat.vercel.ai'),
@@ -56,7 +59,7 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className="antialiased">
+      <body className={cn(font.className, 'antialiased')}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
