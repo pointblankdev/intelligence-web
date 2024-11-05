@@ -69,9 +69,9 @@ export const contractTool: CoreTool<
   parameters: contractParamsSchema,
   description: `Interact with smart contracts on the Stacks blockchain.
 Available operations:
-- getContractInfo: Get detailed information about a specific contract
+- getContractInfo: Get detailed information about a specific contract including its source code and ABI (useful for finding similar contracts with getContractsByTrait)
 - getContractEvents: Get events emitted by a contract
-- getContractsByTrait: Find contracts implementing a specific trait
+- getContractsByTrait: Find contracts implementing a specific trait (traits are a block of ABI code matching between contracts)
 - getContractsStatus: Check deployment status of multiple contracts
 - getContractStatus: Check deployment status of a single contract
 - isContractDeployed: Simple check if a contract is deployed
