@@ -1,6 +1,7 @@
 import { CoreTool } from 'ai';
 
 import { bnsTool } from '@/tools/stacks-api/bns';
+import { contractTool } from '@/tools/stacks-api/contract';
 import { searchTool } from '@/tools/stacks-api/search';
 import { walletTool } from '@/tools/wallet';
 
@@ -11,6 +12,7 @@ export class ToolRegistry {
   constructor() {
     this.tools.set('Stacks-Wallet', walletTool);
     this.tools.set('Stacks-API-BNS', bnsTool);
+    this.tools.set('Stacks-API-Contract', contractTool);
     this.tools.set('Stacks-API-Search', searchTool);
   }
 
