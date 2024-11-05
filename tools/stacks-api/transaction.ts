@@ -5,6 +5,13 @@ import { TransactionService } from '@/services/stacks-api/transaction';
 
 const transactionService = new TransactionService();
 
+// Define response type with error handling
+type TransactionResponse = {
+  success: boolean;
+  data?: any; // Keep as any since the return types vary significantly
+  error?: string;
+};
+
 const transactionParamsSchema = z.object({
   operation: z
     .enum([
@@ -19,7 +26,7 @@ const transactionParamsSchema = z.object({
       'getAddressTransactions',
       'getAddressTransactionEvents',
     ])
-    .describe('The transaction operation to perform.'),
+    .describe('The transaction operation to perform'),
   // Transaction identifiers
   txId: z
     .string()
@@ -94,9 +101,14 @@ const transactionParamsSchema = z.object({
 type TransactionParams = z.infer<typeof transactionParamsSchema>;
 
 export const name = 'Stacks-API-Transaction';
-export const transactionTool: CoreTool<typeof transactionParamsSchema, any> = {
+export const transactionTool: CoreTool<
+  typeof transactionParamsSchema,
+  TransactionResponse
+> = {
   parameters: transactionParamsSchema,
-  description: `Query Stacks blockchain transactions.
+  description: `Query Stacks blockchain transactions. All operations return a structured response with 
+success/error information.
+
 Available operations:
 - getRecentTransactions: Get recent transactions with filtering options
 - getTransaction: Get details of a specific transaction
@@ -107,114 +119,225 @@ Available operations:
 - getTransactionEvents: Get transaction events with filtering
 - getTransactionsByBlock: Get transactions in a specific block
 - getAddressTransactions: Get transactions for an address
-- getAddressTransactionEvents: Get events for an address's transaction`,
-  execute: async (args: TransactionParams, { abortSignal }): Promise<any> => {
+- getAddressTransactionEvents: Get events for an address's transactions`,
+  execute: async (
+    args: TransactionParams,
+    { abortSignal }
+  ): Promise<TransactionResponse> => {
     try {
       switch (args.operation) {
         case 'getRecentTransactions':
-          return await transactionService.getRecentTransactions({
-            limit: args.limit,
-            offset: args.offset,
-            type: args.type,
-            unanchored: args.unanchored,
-            order: args.order,
-            sort_by: args.sortBy,
-            from_address: args.fromAddress,
-            to_address: args.toAddress,
-            start_time: args.startTime,
-            end_time: args.endTime,
-            contract_id: args.contractId,
-            function_name: args.functionName,
-            nonce: args.nonce,
-          });
+          try {
+            const data = await transactionService.getRecentTransactions({
+              limit: args.limit,
+              offset: args.offset,
+              type: args.type,
+              unanchored: args.unanchored,
+              order: args.order,
+              sort_by: args.sortBy,
+              from_address: args.fromAddress,
+              to_address: args.toAddress,
+              start_time: args.startTime,
+              end_time: args.endTime,
+              contract_id: args.contractId,
+              function_name: args.functionName,
+              nonce: args.nonce,
+            });
+            return { success: true, data };
+          } catch (error) {
+            return {
+              success: false,
+              error: `Failed to fetch recent transactions: ${(error as Error).message}`,
+            };
+          }
 
         case 'getTransaction':
           if (!args.txId) {
-            throw new Error('Transaction ID required');
+            return {
+              success: false,
+              error:
+                'Please provide a transaction ID to get transaction details',
+            };
           }
-          return await transactionService.getTransaction(args.txId, {
-            event_limit: args.limit,
-            event_offset: args.offset,
-            unanchored: args.unanchored,
-          });
+          try {
+            const data = await transactionService.getTransaction(args.txId, {
+              event_limit: args.limit,
+              event_offset: args.offset,
+              unanchored: args.unanchored,
+            });
+            return { success: true, data };
+          } catch (error) {
+            return {
+              success: false,
+              error: `Failed to fetch transaction: ${(error as Error).message}`,
+            };
+          }
 
         case 'getRawTransaction':
           if (!args.txId) {
-            throw new Error('Transaction ID required');
+            return {
+              success: false,
+              error:
+                'Please provide a transaction ID to get raw transaction data',
+            };
           }
-          return await transactionService.getRawTransaction(args.txId);
+          try {
+            const data = await transactionService.getRawTransaction(args.txId);
+            return { success: true, data };
+          } catch (error) {
+            return {
+              success: false,
+              error: `Failed to fetch raw transaction: ${(error as Error).message}`,
+            };
+          }
 
         case 'getMempoolTransactions':
-          return await transactionService.getMempoolTransactions({
-            sender_address: args.fromAddress,
-            recipient_address: args.toAddress,
-            address: args.address,
-            order_by: args.orderBy,
-            order: args.order,
-            unanchored: args.unanchored,
-            limit: args.limit,
-            offset: args.offset,
-          });
+          try {
+            const data = await transactionService.getMempoolTransactions({
+              sender_address: args.fromAddress,
+              recipient_address: args.toAddress,
+              address: args.address,
+              order_by: args.orderBy,
+              order: args.order,
+              unanchored: args.unanchored,
+              limit: args.limit,
+              offset: args.offset,
+            });
+            return { success: true, data };
+          } catch (error) {
+            return {
+              success: false,
+              error: `Failed to fetch mempool transactions: ${(error as Error).message}`,
+            };
+          }
 
         case 'getDroppedMempoolTransactions':
-          return await transactionService.getDroppedMempoolTransactions({
-            limit: args.limit,
-            offset: args.offset,
-          });
+          try {
+            const data = await transactionService.getDroppedMempoolTransactions(
+              {
+                limit: args.limit,
+                offset: args.offset,
+              }
+            );
+            return { success: true, data };
+          } catch (error) {
+            return {
+              success: false,
+              error: `Failed to fetch dropped mempool transactions: ${(error as Error).message}`,
+            };
+          }
 
         case 'getMempoolStats':
-          return await transactionService.getMempoolStats();
+          try {
+            const data = await transactionService.getMempoolStats();
+            return { success: true, data };
+          } catch (error) {
+            return {
+              success: false,
+              error: `Failed to fetch mempool statistics: ${(error as Error).message}`,
+            };
+          }
 
         case 'getTransactionEvents':
-          return await transactionService.getTransactionEvents({
-            tx_id: args.txId,
-            address: args.address,
-            type: args.eventType,
-            offset: args.offset,
-            limit: args.limit,
-          });
+          try {
+            const data = await transactionService.getTransactionEvents({
+              tx_id: args.txId,
+              address: args.address,
+              type: args.eventType,
+              offset: args.offset,
+              limit: args.limit,
+            });
+            return { success: true, data };
+          } catch (error) {
+            return {
+              success: false,
+              error: `Failed to fetch transaction events: ${(error as Error).message}`,
+            };
+          }
 
         case 'getTransactionsByBlock':
           if (!args.heightOrHash) {
-            throw new Error('Block height or hash required');
+            return {
+              success: false,
+              error:
+                'Please provide a block height or hash to get transactions',
+            };
           }
-          return await transactionService.getTransactionsByBlock(
-            args.heightOrHash,
-            {
-              limit: args.limit,
-              offset: args.offset,
-            }
-          );
+          try {
+            const data = await transactionService.getTransactionsByBlock(
+              args.heightOrHash,
+              {
+                limit: args.limit,
+                offset: args.offset,
+              }
+            );
+            return { success: true, data };
+          } catch (error) {
+            return {
+              success: false,
+              error: `Failed to fetch block transactions: ${(error as Error).message}`,
+            };
+          }
 
         case 'getAddressTransactions':
           if (!args.address) {
-            throw new Error('Address required');
+            return {
+              success: false,
+              error: 'Please provide an address to get its transactions',
+            };
           }
-          return await transactionService.getAddressTransactions(args.address, {
-            limit: args.limit,
-            offset: args.offset,
-          });
+          try {
+            const data = await transactionService.getAddressTransactions(
+              args.address,
+              {
+                limit: args.limit,
+                offset: args.offset,
+              }
+            );
+            return { success: true, data };
+          } catch (error) {
+            return {
+              success: false,
+              error: `Failed to fetch address transactions: ${(error as Error).message}`,
+            };
+          }
 
         case 'getAddressTransactionEvents':
           if (!args.address || !args.txId) {
-            throw new Error('Address and transaction ID required');
+            return {
+              success: false,
+              error:
+                'Please provide both an address and transaction ID to get transaction events',
+            };
           }
-          return await transactionService.getAddressTransactionEvents(
-            args.address,
-            args.txId,
-            {
-              limit: args.limit,
-              offset: args.offset,
-            }
-          );
+          try {
+            const data = await transactionService.getAddressTransactionEvents(
+              args.address,
+              args.txId,
+              {
+                limit: args.limit,
+                offset: args.offset,
+              }
+            );
+            return { success: true, data };
+          } catch (error) {
+            return {
+              success: false,
+              error: `Failed to fetch address transaction events: ${(error as Error).message}`,
+            };
+          }
 
         default:
-          throw new Error('Invalid operation');
+          return {
+            success: false,
+            error: 'Invalid operation requested',
+          };
       }
     } catch (error) {
-      throw new Error(
-        `Transaction operation failed: ${(error as Error).message}`
-      );
+      return {
+        success: false,
+        error: `An unexpected error occurred: ${(error as Error).message}`,
+      };
     }
   },
 };

@@ -12,6 +12,19 @@ import {
 
 const contractService = new ContractService();
 
+// Define a response type that includes potential error information
+type ContractResponse = {
+  success: boolean;
+  data?:
+    | SmartContract
+    | ContractEventsResponse
+    | ContractsByTraitResponse
+    | ContractStatusMap
+    | ContractStatus
+    | boolean;
+  error?: string;
+};
+
 const contractParamsSchema = z.object({
   operation: z
     .enum([
@@ -22,7 +35,7 @@ const contractParamsSchema = z.object({
       'getContractStatus',
       'isContractDeployed',
     ])
-    .describe('The contract operation to perform.'),
+    .describe('The contract operation to perform'),
   contractId: z
     .string()
     .optional()
@@ -53,25 +66,20 @@ const contractParamsSchema = z.object({
 });
 
 type ContractParams = z.infer<typeof contractParamsSchema>;
-type ContractToolResponse =
-  | SmartContract
-  | ContractEventsResponse
-  | ContractsByTraitResponse
-  | ContractStatusMap
-  | ContractStatus
-  | boolean;
 
 export const name = 'Stacks-API-Contract';
 export const contractTool: CoreTool<
   typeof contractParamsSchema,
-  ContractToolResponse
+  ContractResponse
 > = {
   parameters: contractParamsSchema,
-  description: `Interact with smart contracts on the Stacks blockchain.
+  description: `Interact with smart contracts on the Stacks blockchain. All operations return a structured response 
+with success/error information.
+
 Available operations:
-- getContractInfo: Get detailed information about a specific contract including its source code and ABI (useful for finding similar contracts with getContractsByTrait)
+- getContractInfo: Get detailed information about a specific contract including its source code and ABI
 - getContractEvents: Get events emitted by a contract
-- getContractsByTrait: Find contracts implementing a specific trait (traits are a block of ABI code matching between contracts)
+- getContractsByTrait: Find contracts implementing a specific trait
 - getContractsStatus: Check deployment status of multiple contracts
 - getContractStatus: Check deployment status of a single contract
 - isContractDeployed: Simple check if a contract is deployed
@@ -80,60 +88,139 @@ Pagination is available for operations that return lists (limit max: 50).`,
   execute: async (
     args: ContractParams,
     { abortSignal }
-  ): Promise<ContractToolResponse> => {
+  ): Promise<ContractResponse> => {
     try {
       const { operation } = args;
 
       switch (operation) {
         case 'getContractInfo':
           if (!args.contractId) {
-            throw new Error('Contract ID required for getContractInfo');
+            return {
+              success: false,
+              error: 'Please provide a contract ID to get contract information',
+            };
           }
-          return await contractService.getContractInfo(args.contractId);
+          try {
+            const info = await contractService.getContractInfo(args.contractId);
+            return { success: true, data: info };
+          } catch (error) {
+            return {
+              success: false,
+              error: `Failed to retrieve contract info: ${(error as Error).message}`,
+            };
+          }
 
         case 'getContractEvents':
           if (!args.contractId) {
-            throw new Error('Contract ID required for getContractEvents');
+            return {
+              success: false,
+              error: 'Please provide a contract ID to get contract events',
+            };
           }
-          return await contractService.getContractEvents(
-            args.contractId,
-            args.limit,
-            args.offset
-          );
+          try {
+            const events = await contractService.getContractEvents(
+              args.contractId,
+              args.limit,
+              args.offset
+            );
+            return { success: true, data: events };
+          } catch (error) {
+            return {
+              success: false,
+              error: `Failed to retrieve contract events: ${(error as Error).message}`,
+            };
+          }
 
         case 'getContractsByTrait':
           if (!args.traitAbi) {
-            throw new Error('Trait ABI required for getContractsByTrait');
+            return {
+              success: false,
+              error: 'Please provide a trait ABI to search for contracts',
+            };
           }
-          return await contractService.getContractsByTrait(
-            args.traitAbi,
-            args.limit,
-            args.offset
-          );
+          try {
+            const contracts = await contractService.getContractsByTrait(
+              args.traitAbi,
+              args.limit,
+              args.offset
+            );
+            return { success: true, data: contracts };
+          } catch (error) {
+            return {
+              success: false,
+              error: `Failed to find contracts by trait: ${(error as Error).message}`,
+            };
+          }
 
         case 'getContractsStatus':
           if (!args.contractIds?.length) {
-            throw new Error('Contract IDs required for getContractsStatus');
+            return {
+              success: false,
+              error:
+                'Please provide an array of contract IDs to check their status',
+            };
           }
-          return await contractService.getContractsStatus(args.contractIds);
+          try {
+            const statuses = await contractService.getContractsStatus(
+              args.contractIds
+            );
+            return { success: true, data: statuses };
+          } catch (error) {
+            return {
+              success: false,
+              error: `Failed to retrieve contract statuses: ${(error as Error).message}`,
+            };
+          }
 
         case 'getContractStatus':
           if (!args.contractId) {
-            throw new Error('Contract ID required for getContractStatus');
+            return {
+              success: false,
+              error: 'Please provide a contract ID to check its status',
+            };
           }
-          return await contractService.getContractStatus(args.contractId);
+          try {
+            const status = await contractService.getContractStatus(
+              args.contractId
+            );
+            return { success: true, data: status };
+          } catch (error) {
+            return {
+              success: false,
+              error: `Failed to retrieve contract status: ${(error as Error).message}`,
+            };
+          }
 
         case 'isContractDeployed':
           if (!args.contractId) {
-            throw new Error('Contract ID required for isContractDeployed');
+            return {
+              success: false,
+              error: 'Please provide a contract ID to check if it is deployed',
+            };
           }
-          return await contractService.isContractDeployed(args.contractId);
+          try {
+            const isDeployed = await contractService.isContractDeployed(
+              args.contractId
+            );
+            return { success: true, data: isDeployed };
+          } catch (error) {
+            return {
+              success: false,
+              error: `Failed to check contract deployment: ${(error as Error).message}`,
+            };
+          }
 
         default:
-          throw new Error('Invalid contract operation');
+          return {
+            success: false,
+            error: 'Invalid contract operation requested',
+          };
       }
     } catch (error) {
-      throw new Error(`Contract operation failed: ${(error as Error).message}`);
+      return {
+        success: false,
+        error: `An unexpected error occurred: ${(error as Error).message}`,
+      };
     }
   },
 };

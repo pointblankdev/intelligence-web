@@ -8,6 +8,8 @@ import { BetterTooltip } from '@/components/ui/tooltip';
 import { PlusIcon } from './icons';
 
 export function ChatHeader({ selectedModelId }: { selectedModelId: string }) {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
   return (
     <header className="flex h-16 sticky top-0 bg-background md:h-12 items-center px-2 md:px-2 gap-2">
       <SidebarToggle />
@@ -23,10 +25,12 @@ export function ChatHeader({ selectedModelId }: { selectedModelId: string }) {
           </Link>
         </Button>
       </BetterTooltip>
-      <ModelSelector
-        selectedModelId={selectedModelId}
-        className="order-1 md:order-2"
-      />
+      {isDevelopment && (
+        <ModelSelector
+          selectedModelId={selectedModelId}
+          className="order-1 md:order-2"
+        />
+      )}
     </header>
   );
 }
