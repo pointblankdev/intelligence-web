@@ -130,7 +130,7 @@ export const Message = ({
             <Sparkles className="size-4" />
           </div>
         )}
-        <div className="flex flex-col gap-2 w-full">
+        <div className="flex flex-col gap-2 max-w-[22rem] sm:max-w-full">
           {content && (
             <div className="flex flex-col gap-4">
               <Markdown>{content as string}</Markdown>

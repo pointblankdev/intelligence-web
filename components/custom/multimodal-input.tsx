@@ -31,7 +31,7 @@ const suggestedActions = [
   {
     title: 'What is this?',
     label: 'What am I able to do here?',
-    action: `Who are you and how can you help me? Might be best to talk a bit about my experience with Stacks and your capibilities.`,
+    action: `Who are you and how can you help me? Might be best to talk a bit about my experience with Stacks and your capabilities.`,
   },
 ];
 

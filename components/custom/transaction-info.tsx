@@ -154,10 +154,10 @@ const isMempoolTransaction = (tx: any): tx is MempoolTransaction => {
   return 'receipt_time' in tx && !('block_time' in tx);
 };
 
-const shortenAddress = (address?: string) => {
+const shortenAddress = (address?: string, maxLength = 72, crop = 33) => {
   if (!address) return 'Unknown';
-  if (address.length < 72) return address;
-  return `${address.slice(0, 4)}...${address.slice(-33)}`;
+  if (address.length < maxLength) return address;
+  return `${address.slice(0, 4)}...${address.slice(-crop)}`;
 };
 
 const StatusBadge = ({ status }: { status?: string }) => (
@@ -178,7 +178,7 @@ const StatusBadge = ({ status }: { status?: string }) => (
 const PostConditionItem = ({ condition }: { condition: PostCondition }) => (
   <div className="flex items-center gap-2 text-sm p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
     <Lock className="size-4 text-slate-500" />
-    <span className="font-mono">
+    <span className="font-mono whitespace-nowrap">
       {condition.amount} {condition.asset?.asset_name || 'STX'}
     </span>
     <span className="text-slate-500">via</span>
@@ -384,7 +384,7 @@ const AccordionTransaction = ({ tx: summary }: { tx: TransactionSummary }) => {
                   {getTransactionType(summary.tx)}
                 </h3>
                 {contractInfo && (
-                  <p className="text-xs font-mono text-slate-500 whitespace-nowrap">
+                  <p className="text-xs font-mono text-slate-500 whitespace-nowrap truncate max-w-[6rem] sm:max-w-full">
                     {contractInfo}
                   </p>
                 )}
