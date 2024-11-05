@@ -1,10 +1,9 @@
-import { Account } from '@stacks/wallet-sdk';
 import { CoreTool } from 'ai';
 import { z } from 'zod';
 
 import { auth } from '@/app/(auth)/auth';
 import { WalletMetadata } from '@/db/schema';
-import { WalletService } from '@/services/wallet';
+import { Account, WalletService } from '@/services/wallet';
 
 const walletService = new WalletService();
 
@@ -19,6 +18,8 @@ const walletParamsSchema = z.object({
       'delete',
       'listAccounts',
       'getAccount',
+      'listWallets',
+      'getAccounts',
     ])
     .describe('The wallet or account operation to perform.'),
   walletId: z
@@ -122,20 +123,21 @@ export const walletTool: CoreTool<
           await walletService.deleteWallet(args.walletId, userId);
           return;
 
-        case 'listAccounts':
+        case 'listWallets':
+          return await walletService.getWalletsByUserId(userId);
+
+        case 'getAccounts':
           if (!args.walletId) {
-            throw new Error('Wallet ID required for listing accounts');
+            throw new Error(
+              'Please specify which wallet you want to view accounts for'
+            );
           }
-          return await walletService.listAccounts(
-            args.walletId,
-            userId,
-            args.indexRange
-          );
+          return await walletService.listAccounts(args.walletId, userId);
 
         case 'getAccount':
           if (!args.walletId || args.accountIndex === undefined) {
             throw new Error(
-              'Wallet ID and account index required for getting an account'
+              'Please specify both the wallet and which account number you want to view'
             );
           }
           return await walletService.getAccount(

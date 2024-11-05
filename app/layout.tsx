@@ -9,9 +9,9 @@ import { cn } from '@/lib/utils';
 const font = Ysabeau_Infant({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://chat.vercel.ai'),
-  title: 'Next.js Chatbot Template',
-  description: 'Next.js chatbot template using the AI SDK.',
+  metadataBase: new URL('https://explore.charisma.rocks'),
+  title: 'Charisma Explore',
+  description: 'Experience Stacks with Charisma Explore',
 };
 
 export const viewport = {

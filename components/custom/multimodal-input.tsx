@@ -24,9 +24,9 @@ import { Textarea } from '../ui/textarea';
 
 const suggestedActions = [
   {
-    title: 'Create a new wallet',
-    label: 'Import existing or create a new wallet',
-    action: 'Create a new wallet for me.',
+    title: 'Get started',
+    label: 'Lookup, create or import a wallet',
+    action: `Lookup my wallet, and if I don't have one already, let't get one setup for me.`,
   },
   {
     title: 'What are you able to do?',

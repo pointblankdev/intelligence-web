@@ -3,9 +3,10 @@ import { GAIA_URL } from '@stacks/common';
 import { decryptMnemonic, encryptMnemonic } from '@stacks/encryption';
 import { STACKS_MAINNET } from '@stacks/network';
 import {
-  Account,
+  Account as BaseAccount,
   generateNewAccount,
   generateWallet,
+  getStxAddress,
   randomSeedPhrase,
   restoreWalletAccounts,
   Wallet,
@@ -16,6 +17,10 @@ import postgres from 'postgres';
 import { generateSlug } from 'random-word-slugs';
 
 import { user, wallet, WalletMetadata } from '@/db/schema';
+
+export interface Account extends BaseAccount {
+  stxAddress?: string;
+}
 
 const client = postgres(`${process.env.POSTGRES_URL!}?sslmode=require`);
 const db = drizzle(client);
@@ -241,7 +246,12 @@ export class WalletService {
     try {
       const stacksWallet = await this.getStacksWallet(walletId, userId);
 
-      return stacksWallet.accounts.slice(0, indexRange);
+      const stacksAccounts = stacksWallet.accounts.map((account, index) => ({
+        ...account,
+        stxAddress: getStxAddress(account),
+        index,
+      }));
+      return stacksAccounts.slice(0, indexRange);
     } catch (error) {
       console.error('Failed to list accounts:', error);
       throw error;
@@ -258,7 +268,10 @@ export class WalletService {
 
       const account = stacksWallet.accounts[accountIndex];
 
-      return account;
+      return {
+        ...account,
+        stxAddress: getStxAddress(stacksWallet.accounts[accountIndex]),
+      };
     } catch (error) {
       console.error('Failed to get account:', error);
       throw error;
