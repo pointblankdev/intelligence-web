@@ -1,14 +1,14 @@
 import cx from 'classnames';
 import { format } from 'date-fns';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity,
   ArrowRightLeft,
   BarChart2,
+  ChevronDown,
   Clock,
   Code2,
   CreditCard,
-  ExternalLink,
   FileCode,
   Hash,
   Lock,
@@ -17,8 +17,35 @@ import {
   ShieldAlert,
   Wallet,
 } from 'lucide-react';
+import { useState } from 'react';
 
 // Core transaction types
+
+interface Events {
+  stx: {
+    transfer: number;
+    mint: number;
+    burn: number;
+  };
+  ft: {
+    transfer: number;
+    mint: number;
+    burn: number;
+  };
+  nft: {
+    transfer: number;
+    mint: number;
+    burn: number;
+  };
+}
+
+interface TransactionSummary {
+  tx: Transaction;
+  stx_sent: string;
+  stx_received: string;
+  events: Events;
+}
+
 interface PostCondition {
   principal: {
     type_id: string;
@@ -58,9 +85,10 @@ interface Transaction {
   anchor_mode: string;
   tx_status: string;
   receipt_time?: number;
-  receipt_time_iso?: string;
+  block_time_iso?: string;
   tx_type: string;
   contract_call?: ContractCall;
+  token_transfer?: any;
 }
 
 // Different response types
@@ -85,8 +113,8 @@ type TransactionResponse = {
 
 const shortenAddress = (address?: string) => {
   if (!address) return 'Unknown';
-  if (address.length < 12) return address;
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  if (address.length < 64) return address;
+  return `${address.slice(0, 4)}...${address.slice(-4)}`;
 };
 
 const StatusBadge = ({ status }: { status?: string }) => (
@@ -130,7 +158,7 @@ const FunctionArg = ({
       <span className="text-xs text-slate-500">{arg.type}</span>
     </div>
     <code className="text-sm font-mono truncate" title={arg.repr}>
-      {arg.repr.length > 50 ? `${arg.repr.slice(0, 47)}...` : arg.repr}
+      {arg.repr.length > 72 ? `${arg.repr.slice(0, 70)}...` : arg.repr}
     </code>
   </div>
 );
@@ -169,109 +197,233 @@ const MempoolStatsView = ({ stats }: { stats: MempoolStats }) => (
   </div>
 );
 
-const TransactionInfo = ({ tx }: { tx: Transaction }) => {
+const getTransactionType = (tx: Transaction) => {
+  if (tx.tx_type === 'contract_call') {
+    return tx.contract_call?.function_name;
+  }
+  if (tx.tx_type === 'token_transfer') {
+    return 'Transfer';
+  }
+  return tx.tx_type;
+};
+
+const getContractInfo = (tx: Transaction) => {
+  if (tx.tx_type === 'contract_call') {
+    return shortenAddress(tx.contract_call?.contract_id);
+  }
+  if (tx.tx_type === 'token_transfer') {
+    return shortenAddress(tx.token_transfer.recipient_address);
+  }
+  return null;
+};
+
+const AssetMovements = ({ summary }: { summary: TransactionSummary }) => {
+  const hasSTX = summary.stx_sent !== '0' || summary.stx_received !== '0';
+  const hasFT =
+    summary.events.ft.transfer > 0 ||
+    summary.events.ft.mint > 0 ||
+    summary.events.ft.burn > 0;
+  const hasNFT =
+    summary.events.nft.transfer > 0 ||
+    summary.events.nft.mint > 0 ||
+    summary.events.nft.burn > 0;
+
+  if (!hasSTX && !hasFT && !hasNFT) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2 items-center">
+      {summary.stx_received !== '0' && (
+        <span className="px-2 py-0.5 text-xs rounded-full bg-green-500/10 text-green-700 dark:text-green-300 font-medium">
+          +{parseInt(summary.stx_received).toLocaleString()} µSTX
+        </span>
+      )}
+      {summary.stx_sent !== '0' && parseInt(summary.stx_sent) > 1000000 && (
+        <span className="px-2 py-0.5 text-xs rounded-full bg-red-500/10 text-red-700 dark:text-red-300 font-medium">
+          -{parseInt(summary.stx_sent).toLocaleString()} µSTX
+        </span>
+      )}
+      {hasFT && (
+        <span className="px-2 py-0.5 text-xs rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 font-medium">
+          {[
+            summary.events.ft.transfer > 0
+              ? `${summary.events.ft.transfer} transfers`
+              : null,
+            summary.events.ft.mint > 0
+              ? `${summary.events.ft.mint} mints`
+              : null,
+            summary.events.ft.burn > 0
+              ? `${summary.events.ft.burn} burns`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(', ')}
+        </span>
+      )}
+      {hasNFT && (
+        <span className="px-2 py-0.5 text-xs rounded-full bg-purple-500/10 text-purple-700 dark:text-purple-300 font-medium">
+          {[
+            summary.events.nft.transfer > 0
+              ? `${summary.events.nft.transfer} NFTs`
+              : null,
+            summary.events.nft.mint > 0
+              ? `${summary.events.nft.mint} mints`
+              : null,
+            summary.events.nft.burn > 0
+              ? `${summary.events.nft.burn} burns`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(', ')}
+        </span>
+      )}
+    </div>
+  );
+};
+
+const AccordionTransaction = ({ tx: summary }: { tx: TransactionSummary }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const hasExpandableContent =
+    summary.tx.tx_type === 'contract_call' &&
+    summary.tx.contract_call &&
+    (summary.tx.contract_call.function_args.length > 0 ||
+      summary.tx.post_conditions.length > 0);
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (hasExpandableContent) {
+      setIsExpanded(!isExpanded);
+    }
+  };
+
+  const contractInfo = getContractInfo(summary.tx);
+
   return (
     <motion.div
-      className="w-full max-w-2xl"
+      className="w-full"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4 border-b border-slate-200 dark:border-slate-800">
-          <div className="flex items-center justify-between mb-3">
+        <button
+          onClick={handleClick}
+          className={cx(
+            'w-full bg-gradient-to-r from-slate-50 to-slate-100',
+            'dark:from-slate-900 dark:to-slate-800',
+            'p-4 border-b border-slate-200 dark:border-slate-800',
+            {
+              'hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors':
+                hasExpandableContent,
+              'border-b-0 rounded-b-xl': !isExpanded,
+              'cursor-default': !hasExpandableContent,
+            }
+          )}
+        >
+          {/* Top Row - TX Info */}
+          <div className="flex items-start justify-between w-full mb-3">
             <div className="flex items-center gap-3">
-              {tx.tx_type === 'contract_call' ? (
-                <FileCode className="size-5 text-blue-500" />
-              ) : (
-                <Send className="size-5 text-green-500" />
-              )}
-              <h3 className="font-mono text-sm">{shortenAddress(tx.tx_id)}</h3>
+              <div className="p-2 rounded-lg bg-blue-500/10">
+                {summary.tx.tx_type === 'contract_call' ? (
+                  <FileCode className="size-4 text-blue-500" />
+                ) : (
+                  <Send className="size-4 text-green-500" />
+                )}
+              </div>
+              <div className="flex flex-col items-start gap-0.5">
+                <h3 className="font-medium text-sm">
+                  {getTransactionType(summary.tx)}
+                </h3>
+                {contractInfo && (
+                  <p className="text-xs font-mono text-slate-500">
+                    {contractInfo}
+                  </p>
+                )}
+              </div>
             </div>
-            <StatusBadge status={tx.tx_status} />
+            <div className="flex items-center gap-2">
+              <StatusBadge status={summary.tx.tx_status} />
+              {hasExpandableContent && (
+                <ChevronDown
+                  className={cx('size-4 transition-transform', {
+                    'transform rotate-180': isExpanded,
+                  })}
+                />
+              )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <Clock className="size-4 text-slate-400" />
+          {/* Bottom Row - Time and Assets */}
+          <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between text-sm text-left">
+            <div className="flex items-center gap-2 text-slate-500">
+              <Clock className="size-4" />
               <span>
-                {tx.receipt_time_iso
-                  ? format(new Date(tx.receipt_time_iso), 'MMM d, HH:mm:ss')
+                {summary.tx.block_time_iso
+                  ? format(
+                      new Date(summary.tx.block_time_iso),
+                      'MMM d, HH:mm:ss'
+                    )
                   : 'Pending'}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <CreditCard className="size-4 text-slate-400" />
-              <span>{parseInt(tx.fee_rate).toLocaleString()} μSTX</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Activity className="size-4 text-slate-400" />
-              <span>Nonce: {tx.nonce}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <ShieldAlert className="size-4 text-slate-400" />
-              <span>{tx.post_condition_mode}</span>
-            </div>
+            <AssetMovements summary={summary} />
           </div>
-        </div>
+        </button>
 
-        {/* Body */}
-        <div className="p-4 space-y-4">
-          {/* Addresses */}
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-900">
-            <Wallet className="size-4 text-slate-400" />
-            <span className="font-mono text-sm">
-              {shortenAddress(tx.sender_address)}
-            </span>
-            <ArrowRightLeft className="size-4 text-slate-400" />
-            <span className="font-mono text-sm">
-              {shortenAddress(tx.contract_call?.contract_id)}
-            </span>
-          </div>
+        {hasExpandableContent && (
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="p-4 space-y-4 border-t border-slate-200 dark:border-slate-800">
+                  {/* Contract Details */}
+                  {summary.tx.tx_type === 'contract_call' &&
+                    summary.tx.contract_call && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          <Settings className="size-4" />
+                          <span>{summary.tx.contract_call.contract_id}</span>
+                        </div>
+                        <div className="pl-6">
+                          <code className="text-sm bg-slate-100 dark:bg-slate-800 rounded px-2 py-1">
+                            {summary.tx.contract_call.function_name}
+                          </code>
+                        </div>
 
-          {/* Contract Call */}
-          {tx.tx_type === 'contract_call' && tx.contract_call && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Settings className="size-4" />
-                <span>{tx.contract_call.function_name}</span>
-              </div>
+                        <div className="pl-6 space-y-2 mt-2">
+                          {summary.tx.contract_call.function_args.map(
+                            (arg, i) => (
+                              <FunctionArg key={i} arg={arg} />
+                            )
+                          )}
+                        </div>
+                      </div>
+                    )}
 
-              <div className="pl-6 space-y-2">
-                {tx.contract_call.function_args.slice(0, 3).map((arg, i) => (
-                  <FunctionArg key={i} arg={arg} />
-                ))}
-                {tx.contract_call.function_args.length > 3 && (
-                  <div className="text-sm text-slate-500">
-                    +{tx.contract_call.function_args.length - 3} more arguments
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+                  {/* Post Conditions */}
+                  {summary.tx.post_conditions?.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <Lock className="size-4" />
+                        <span>Post Conditions</span>
+                      </div>
 
-          {/* Post Conditions */}
-          {tx.post_conditions?.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Lock className="size-4" />
-                <span>Post Conditions</span>
-              </div>
-
-              <div className="pl-6 space-y-2">
-                {tx.post_conditions.slice(0, 3).map((condition, i) => (
-                  <PostConditionItem key={i} condition={condition} />
-                ))}
-                {tx.post_conditions.length > 3 && (
-                  <div className="text-sm text-slate-500">
-                    +{tx.post_conditions.length - 3} more conditions
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+                      <div className="pl-6 space-y-2 w-full">
+                        {summary.tx.post_conditions.map((condition, i) => (
+                          <PostConditionItem key={i} condition={condition} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
       </div>
     </motion.div>
   );
@@ -317,9 +469,9 @@ export function TransactionDisplay({
           <span>{format(new Date(), 'MMM d, HH:mm:ss')}</span>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-2">
           {response.data.results.map((tx) => (
-            <TransactionInfo key={tx.tx_id} tx={tx} />
+            <AccordionTransaction key={tx.tx_id} tx={tx as any} />
           ))}
         </div>
       </div>
@@ -327,5 +479,5 @@ export function TransactionDisplay({
   }
 
   // Handle single transaction
-  return <TransactionInfo tx={response.data} />;
+  return <AccordionTransaction tx={response.data as any} />;
 }

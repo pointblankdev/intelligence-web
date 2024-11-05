@@ -26,12 +26,12 @@ const suggestedActions = [
   {
     title: 'Get started exploring',
     label: 'Lookup, create or import a wallet',
-    action: `Lookup my wallet, and if I don't have one already, let't get one setup for me.`,
+    action: `I want to lookup my wallet. If I don't have one already, I'll setup one.`,
   },
   {
-    title: 'What are you able to do?',
-    label: 'Do you know how to use Stacks?',
-    action: `What are you able to do and how can you help me with my Stacks wallet? Don't create a new wallet if I already have one, please.`,
+    title: 'What am I able to do here?',
+    label: 'What are my skills/abilities?',
+    action: `What are my skills/abilities?`,
   },
 ];
 
@@ -246,7 +246,7 @@ export function MultimodalInput({
 
       <Textarea
         ref={textareaRef}
-        placeholder="Send a message..."
+        placeholder="What would you like to do?"
         value={input}
         onChange={handleInput}
         className={cx(
