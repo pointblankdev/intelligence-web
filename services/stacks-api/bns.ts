@@ -1,4 +1,4 @@
-import { BaseStacksService } from './stacks-api';
+import { BaseStacksService } from '.';
 
 interface BnsNamesResponse {
   names: string[];

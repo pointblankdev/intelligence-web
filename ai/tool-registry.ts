@@ -1,6 +1,7 @@
 import { CoreTool } from 'ai';
 
-import { bnsTool } from '@/tools/bns';
+import { bnsTool } from '@/tools/stacks-api/bns';
+import { searchTool } from '@/tools/stacks-api/search';
 import { walletTool } from '@/tools/wallet';
 
 // We don't need to extend Tool anymore since we're using CoreTool directly
@@ -8,8 +9,9 @@ export class ToolRegistry {
   private tools: Map<string, CoreTool> = new Map();
 
   constructor() {
-    this.tools.set('walletTool', walletTool);
-    this.tools.set('bnsTool', bnsTool);
+    this.tools.set('Stacks-Wallet', walletTool);
+    this.tools.set('Stacks-API-BNS', bnsTool);
+    this.tools.set('Stacks-API-Search', searchTool);
   }
 
   getTool(name: string): CoreTool | undefined {

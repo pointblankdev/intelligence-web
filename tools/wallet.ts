@@ -51,7 +51,7 @@ const walletParamsSchema = z.object({
 
 type WalletParams = z.infer<typeof walletParamsSchema>;
 
-export const name = 'wallet';
+export const name = 'Stacks-Wallet';
 export const walletTool: CoreTool<
   typeof walletParamsSchema,
   | WalletMetadata

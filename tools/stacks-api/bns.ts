@@ -1,7 +1,7 @@
 import { CoreTool } from 'ai';
 import { z } from 'zod';
 
-import { BnsNameInfo, BnsService } from '@/services/bns';
+import { BnsNameInfo, BnsService } from '@/services/stacks-api/bns';
 
 const bnsService = new BnsService();
 
@@ -25,7 +25,7 @@ const bnsParamsSchema = z.object({
 
 type BnsParams = z.infer<typeof bnsParamsSchema>;
 
-export const name = 'bns';
+export const name = 'Stacks-API-BNS';
 export const bnsTool: CoreTool<typeof bnsParamsSchema, string[] | BnsNameInfo> =
   {
     parameters: bnsParamsSchema,
