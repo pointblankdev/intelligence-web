@@ -24,15 +24,14 @@ import { Textarea } from '../ui/textarea';
 
 const suggestedActions = [
   {
-    title: 'Get started',
+    title: 'Get started exploring',
     label: 'Lookup, create or import a wallet',
     action: `Lookup my wallet, and if I don't have one already, let't get one setup for me.`,
   },
   {
     title: 'What are you able to do?',
     label: 'Do you know how to use Stacks?',
-    action:
-      'What are you able to do and how can you help me with my Stacks wallet?',
+    action: `What are you able to do and how can you help me with my Stacks wallet? Don't create a new wallet if I already have one, please.`,
   },
 ];
 
