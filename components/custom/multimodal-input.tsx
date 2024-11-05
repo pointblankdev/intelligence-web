@@ -26,12 +26,12 @@ const suggestedActions = [
   {
     title: 'Get started exploring',
     label: 'Lookup, create or import a wallet',
-    action: `I want to lookup my wallet. If I don't have one already, I'll setup one.`,
+    action: `Explain how to get started and what are some cool things I can do here.`,
   },
   {
-    title: 'What am I able to do here?',
-    label: 'What are my skills/abilities?',
-    action: `What are my skills/abilities?`,
+    title: 'What is this?',
+    label: 'What am I able to do here?',
+    action: `Who are you and how can you help me? Might be best to talk a bit about my experience with Stacks and your capibilities.`,
   },
 ];
 

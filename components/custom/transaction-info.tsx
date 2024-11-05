@@ -66,29 +66,50 @@ interface ContractCall {
   contract_id: string;
   function_name: string;
   function_signature: string;
-  function_args: Array<{
-    hex: string;
-    repr: string;
-    name: string;
-    type: string;
-  }>;
+  function_args: any[];
+}
+
+interface TransactionResult {
+  hex: string;
+  repr: string;
 }
 
 interface Transaction {
-  tx_id: string;
-  nonce: number;
+  anchor_mode: string;
+  block_hash: string;
+  block_height: number;
+  block_time: number;
+  block_time_iso: string;
+  burn_block_height: number;
+  burn_block_time: number;
+  burn_block_time_iso: string;
+  canonical: boolean;
+  contract_call: ContractCall;
+  event_count: number;
+  events?: any[];
+  execution_cost_read_count: number;
+  execution_cost_read_length: number;
+  execution_cost_runtime: number;
+  execution_cost_write_count: number;
+  execution_cost_write_length: number;
   fee_rate: string;
+  is_unanchored: boolean;
+  microblock_canonical: boolean;
+  microblock_hash: string;
+  microblock_sequence: number;
+  nonce: number;
+  parent_block_hash: string;
+  parent_burn_block_time: number;
+  parent_burn_block_time_iso: string;
+  post_condition_mode: string;
+  post_conditions: any[];
   sender_address: string;
   sponsored: boolean;
-  post_condition_mode: string;
-  post_conditions: PostCondition[];
-  anchor_mode: string;
+  tx_id: string;
+  tx_index: number;
+  tx_result: TransactionResult;
   tx_status: string;
-  receipt_time?: number;
-  block_time_iso?: string;
   tx_type: string;
-  contract_call?: ContractCall;
-  token_transfer?: any;
 }
 
 // Different response types
@@ -111,10 +132,32 @@ type TransactionResponse = {
   error?: string;
 };
 
+// Add interface for mempool pending transactions
+interface MempoolTransaction {
+  anchor_mode: string;
+  contract_call?: ContractCall;
+  fee_rate: string;
+  nonce: number;
+  post_condition_mode: string;
+  post_conditions: any[];
+  receipt_time: number;
+  receipt_time_iso: string;
+  sender_address: string;
+  sponsored: boolean;
+  tx_id: string;
+  tx_status: string;
+  tx_type: string;
+}
+
+// Helper function to determine if a transaction is a mempool transaction
+const isMempoolTransaction = (tx: any): tx is MempoolTransaction => {
+  return 'receipt_time' in tx && !('block_time' in tx);
+};
+
 const shortenAddress = (address?: string) => {
   if (!address) return 'Unknown';
-  if (address.length < 64) return address;
-  return `${address.slice(0, 4)}...${address.slice(-4)}`;
+  if (address.length < 72) return address;
+  return `${address.slice(0, 4)}...${address.slice(-33)}`;
 };
 
 const StatusBadge = ({ status }: { status?: string }) => (
@@ -139,7 +182,7 @@ const PostConditionItem = ({ condition }: { condition: PostCondition }) => (
       {condition.amount} {condition.asset?.asset_name || 'STX'}
     </span>
     <span className="text-slate-500">via</span>
-    <span className="font-mono truncate">
+    <span className="font-mono truncate whitespace-nowrap">
       {shortenAddress(condition.principal.address)}
     </span>
   </div>
@@ -157,7 +200,10 @@ const FunctionArg = ({
       </code>
       <span className="text-xs text-slate-500">{arg.type}</span>
     </div>
-    <code className="text-sm font-mono truncate" title={arg.repr}>
+    <code
+      className="text-sm font-mono truncate whitespace-nowrap"
+      title={arg.repr}
+    >
       {arg.repr.length > 72 ? `${arg.repr.slice(0, 70)}...` : arg.repr}
     </code>
   </div>
@@ -210,9 +256,6 @@ const getTransactionType = (tx: Transaction) => {
 const getContractInfo = (tx: Transaction) => {
   if (tx.tx_type === 'contract_call') {
     return shortenAddress(tx.contract_call?.contract_id);
-  }
-  if (tx.tx_type === 'token_transfer') {
-    return shortenAddress(tx.token_transfer.recipient_address);
   }
   return null;
 };
@@ -280,8 +323,12 @@ const AssetMovements = ({ summary }: { summary: TransactionSummary }) => {
   );
 };
 
+// Modified AccordionTransaction component to handle pending transactions
 const AccordionTransaction = ({ tx: summary }: { tx: TransactionSummary }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const isPending =
+    isMempoolTransaction(summary.tx) || summary.tx.tx_status === 'pending';
+
   const hasExpandableContent =
     summary.tx.tx_type === 'contract_call' &&
     summary.tx.contract_call &&
@@ -296,6 +343,9 @@ const AccordionTransaction = ({ tx: summary }: { tx: TransactionSummary }) => {
   };
 
   const contractInfo = getContractInfo(summary.tx);
+  const timeValue = isMempoolTransaction(summary.tx)
+    ? summary.tx.receipt_time_iso
+    : summary.tx.block_time_iso;
 
   return (
     <motion.div
@@ -334,7 +384,7 @@ const AccordionTransaction = ({ tx: summary }: { tx: TransactionSummary }) => {
                   {getTransactionType(summary.tx)}
                 </h3>
                 {contractInfo && (
-                  <p className="text-xs font-mono text-slate-500">
+                  <p className="text-xs font-mono text-slate-500 whitespace-nowrap">
                     {contractInfo}
                   </p>
                 )}
@@ -428,7 +478,112 @@ const AccordionTransaction = ({ tx: summary }: { tx: TransactionSummary }) => {
     </motion.div>
   );
 };
+// Modified helper function to compute events, now handling mempool transactions
+const computeEvents = (tx: Transaction | MempoolTransaction): Events => {
+  const events: Events = {
+    stx: { transfer: 0, mint: 0, burn: 0 },
+    ft: { transfer: 0, mint: 0, burn: 0 },
+    nft: { transfer: 0, mint: 0, burn: 0 },
+  };
 
+  // For mempool transactions, we can only estimate based on the contract call
+  // and post conditions since events haven't occurred yet
+  if (isMempoolTransaction(tx)) {
+    // Analyze post conditions to predict potential events
+    tx.post_conditions.forEach((condition: any) => {
+      if (condition.type === 'stx') {
+        events.stx.transfer++;
+      } else if (condition.type === 'fungible') {
+        events.ft.transfer++;
+      } else if (condition.type === 'non_fungible') {
+        events.nft.transfer++;
+      }
+    });
+    return events;
+  }
+
+  // For confirmed transactions, use the existing logic
+  (tx as Transaction).events?.forEach((event: any) => {
+    if (event.type === 'stx_transfer') {
+      events.stx.transfer++;
+    } else if (event.type === 'ft_transfer') {
+      events.ft.transfer++;
+    } else if (event.type === 'ft_mint') {
+      events.ft.mint++;
+    } else if (event.type === 'ft_burn') {
+      events.ft.burn++;
+    } else if (event.type === 'nft_transfer') {
+      events.nft.transfer++;
+    } else if (event.type === 'nft_mint') {
+      events.nft.mint++;
+    } else if (event.type === 'nft_burn') {
+      events.nft.burn++;
+    }
+  });
+
+  return events;
+};
+
+// Modified helper function to compute STX movements, now handling mempool transactions
+const computeSTXMovements = (
+  tx: Transaction | MempoolTransaction
+): { sent: string; received: string } => {
+  let sent = '0';
+  let received = '0';
+
+  // Always count the fee rate as sent
+  sent = tx.fee_rate;
+
+  if (isMempoolTransaction(tx)) {
+    // For mempool transactions, analyze post conditions
+    tx.post_conditions.forEach((condition: any) => {
+      if (condition.type === 'stx') {
+        if (condition.principal.address === tx.sender_address) {
+          sent = (BigInt(sent) + BigInt(condition.amount)).toString();
+        } else {
+          received = (BigInt(received) + BigInt(condition.amount)).toString();
+        }
+      }
+    });
+    return { sent, received };
+  }
+
+  // For confirmed transactions, use the existing logic
+  const confirmedTx = tx as Transaction;
+  if (confirmedTx.tx_type === 'token_transfer') {
+    sent = confirmedTx.fee_rate;
+  }
+
+  confirmedTx.events?.forEach((event: any) => {
+    if (event.type === 'stx_transfer') {
+      if (event.sender === confirmedTx.sender_address) {
+        sent = (BigInt(sent) + BigInt(event.amount)).toString();
+      }
+      if (event.recipient === confirmedTx.sender_address) {
+        received = (BigInt(received) + BigInt(event.amount)).toString();
+      }
+    }
+  });
+
+  return { sent, received };
+};
+
+// Modified function to create a TransactionSummary from either a Transaction or MempoolTransaction
+const createTransactionSummary = (
+  tx: Transaction | MempoolTransaction
+): TransactionSummary => {
+  const events = computeEvents(tx);
+  const { sent, received } = computeSTXMovements(tx);
+
+  return {
+    tx: tx as Transaction, // Type assertion needed since TransactionSummary expects Transaction
+    stx_sent: sent,
+    stx_received: received,
+    events,
+  };
+};
+
+// Modified TransactionDisplay to handle the transformation
 export function TransactionDisplay({
   response,
 }: {
@@ -446,6 +601,8 @@ export function TransactionDisplay({
       </div>
     );
   }
+
+  console.log(response.data);
 
   // Handle raw transaction data
   if (typeof response.data === 'string') {
@@ -471,7 +628,10 @@ export function TransactionDisplay({
 
         <div className="space-y-2">
           {response.data.results.map((tx) => (
-            <AccordionTransaction key={tx.tx_id} tx={tx as any} />
+            <AccordionTransaction
+              key={tx.tx_id}
+              tx={createTransactionSummary(tx)}
+            />
           ))}
         </div>
       </div>
@@ -479,5 +639,5 @@ export function TransactionDisplay({
   }
 
   // Handle single transaction
-  return <AccordionTransaction tx={response.data as any} />;
+  return <AccordionTransaction tx={createTransactionSummary(response.data)} />;
 }

@@ -67,7 +67,7 @@ export async function POST(request: Request) {
 
   const result = await streamText({
     model: customModel(model.apiIdentifier),
-    system: modelId === 'gpt-4o-canvas' ? canvasPrompt : dungeonMasterPrompt,
+    system: modelId === 'gpt-4o-canvas' ? canvasPrompt : regularPrompt,
     messages: coreMessages,
     maxSteps: 10,
     experimental_activeTools: activeTools as (
