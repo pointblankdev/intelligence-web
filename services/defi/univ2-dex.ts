@@ -143,7 +143,7 @@ export class DexReadService {
 
       const key = `${path}:${hexArgs.join(':')}`;
       const cachedResponse = await cache.get(key);
-      if (cachedResponse) return cachedResponse;
+      if (cachedResponse) return cvToValue(hexToCV(cachedResponse as string));
 
       const response = await this.client.POST(path as any, {
         body: {

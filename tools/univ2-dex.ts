@@ -71,90 +71,239 @@ interface DexToolResponse {
 /**
  * Operation-specific parameter schemas
  */
-const PoolsParams = z.object({
-  poolId: z.string().optional(),
-  token0: z.string().optional(),
-  token1: z.string().optional(),
-  pairs: z.array(z.tuple([z.string(), z.string()])).optional(),
-});
+const PoolsParams = z
+  .object({
+    poolId: z
+      .string()
+      .optional()
+      .describe(
+        'The unique identifier of a specific pool. Used with getPoolById to query a single pool. ' +
+          'Pool IDs start at 1 and increment sequentially as pools are created.'
+      ),
+    token0: z
+      .string()
+      .optional()
+      .describe(
+        'The contract address of the first token in a pair. ' +
+          'Used with token1 in getPool to find a specific trading pair. ' +
+          'Format: SP2...<contract_address>.<token_name>'
+      ),
+    token1: z
+      .string()
+      .optional()
+      .describe(
+        'The contract address of the second token in a pair. ' +
+          'Used with token0 in getPool to find a specific trading pair. ' +
+          'Format: SP2...<contract_address>.<token_name>'
+      ),
+    pairs: z
+      .array(z.tuple([z.string(), z.string()]))
+      .optional()
+      .describe(
+        'Array of token address pairs for batch pool queries. Used with getPools to efficiently fetch multiple pools at once. ' +
+          'Each pair should be [token0Address, token1Address]. ' +
+          'Example: [["SP2...token1", "SP2...token2"], ["SP2...token3", "SP2...token4"]]'
+      ),
+  })
+  .describe(
+    'Parameters for pool information queries. Used to fetch pool states, reserves, and fees.'
+  );
 
-const SwapParams = z.object({
-  tokenIn: z.string(),
-  tokenOut: z.string(),
-  amount: z.string(),
-  path: z.array(z.string()).optional(),
-  paths: z.array(z.array(z.string())).optional(),
-  exactOutput: z.boolean().optional(),
-});
+const SwapParams = z
+  .object({
+    tokenIn: z
+      .string()
+      .describe(
+        'The contract address of the token being sold/swapped in. ' +
+          'Required for all swap operations to identify the input token.'
+      ),
+    tokenOut: z
+      .string()
+      .describe(
+        'The contract address of the token being bought/swapped out. ' +
+          'Required for all swap operations to identify the desired output token.'
+      ),
+    amount: z
+      .string()
+      .describe(
+        'The amount of tokens for the swap operation as a string (represents a BigInt). ' +
+          'For normal swaps, this is the input amount. For exactOutput swaps, this is the desired output amount.'
+      ),
+    path: z
+      .array(z.string())
+      .optional()
+      .describe(
+        'Ordered array of token addresses representing a multi-hop swap route. ' +
+          'Required for getMultiHopQuote operations. Each address must connect to the next in a valid pool. ' +
+          'Example: ["tokenA", "tokenB", "tokenC"] swaps A->B->C'
+      ),
+    paths: z
+      .array(z.array(z.string()))
+      .optional()
+      .describe(
+        'Array of multiple swap paths for batch quote operations. ' +
+          'Used with batchGetQuotes to efficiently price multiple possible routes. ' +
+          'Each inner array is a complete swap path like the "path" parameter.'
+      ),
+    exactOutput: z
+      .boolean()
+      .optional()
+      .describe(
+        'If true, the amount represents the desired output amount rather than input amount. ' +
+          'Used to specify whether to calculate how much input is needed for a specific output amount.'
+      ),
+  })
+  .describe(
+    'Parameters for swap operations. Used to calculate trade amounts, routes, and price impacts.'
+  );
 
-const LiquidityParams = z.object({
-  poolId: z.string(),
-  amount0: z.string(),
-  amount1: z.string(),
-  minAmount0: z.string().optional(),
-  minAmount1: z.string().optional(),
-  queries: z
-    .array(
-      z.object({
-        poolId: z.string(),
-        desiredAmount0: z.string(),
-        desiredAmount1: z.string(),
-        minAmount0: z.string().optional(),
-        minAmount1: z.string().optional(),
-      })
-    )
-    .optional(),
-});
+const LiquidityParams = z
+  .object({
+    poolId: z
+      .string()
+      .describe(
+        'The unique identifier of the pool to add liquidity to. ' +
+          'Required for all liquidity operations to identify the target pool.'
+      ),
+    amount0: z
+      .string()
+      .describe(
+        'The desired amount of token0 to add as liquidity (as string for BigInt). ' +
+          'Used with amount1 to specify the liquidity provision amounts.'
+      ),
+    amount1: z
+      .string()
+      .describe(
+        'The desired amount of token1 to add as liquidity (as string for BigInt). ' +
+          'Used with amount0 to specify the liquidity provision amounts.'
+      ),
+    minAmount0: z
+      .string()
+      .optional()
+      .describe(
+        'Minimum acceptable amount of token0 to add (as string for BigInt). ' +
+          'Protects against unfavorable pool state changes. Defaults to 0 if not specified.'
+      ),
+    minAmount1: z
+      .string()
+      .optional()
+      .describe(
+        'Minimum acceptable amount of token1 to add (as string for BigInt). ' +
+          'Protects against unfavorable pool state changes. Defaults to 0 if not specified.'
+      ),
+    queries: z
+      .array(
+        z.object({
+          poolId: z.string(),
+          desiredAmount0: z.string(),
+          desiredAmount1: z.string(),
+          minAmount0: z.string().optional(),
+          minAmount1: z.string().optional(),
+        })
+      )
+      .optional()
+      .describe(
+        'Array of liquidity addition queries for batch operations. ' +
+          'Used with batchGetLiquidityQuotes to efficiently calculate multiple liquidity additions. ' +
+          'Each query contains the same parameters as a single liquidity addition.'
+      ),
+  })
+  .describe(
+    'Parameters for liquidity provision operations. Used to calculate optimal deposit amounts and expected LP tokens.'
+  );
 
-const RemovalParams = z.object({
-  poolId: z.string(),
-  liquidityTokens: z.string(),
-  getTotalRange: z.boolean().optional(),
-  queries: z
-    .array(
-      z.object({
-        poolId: z.string(),
-        liquidityTokens: z.string(),
-      })
-    )
-    .optional(),
-});
+const RemovalParams = z
+  .object({
+    poolId: z
+      .string()
+      .describe(
+        'The unique identifier of the pool to remove liquidity from. ' +
+          'Required for all removal operations to identify the target pool.'
+      ),
+    liquidityTokens: z
+      .string()
+      .describe(
+        'The amount of LP tokens to burn when removing liquidity (as string for BigInt). ' +
+          'Represents the share of the pool to be removed.'
+      ),
+    getTotalRange: z
+      .boolean()
+      .optional()
+      .describe(
+        'If true, returns quotes for removing different percentages (25%, 50%, 75%, 100%) of total liquidity. ' +
+          'Used with getRemoveLiquidityRangeQuotes to explore different removal options.'
+      ),
+    queries: z
+      .array(
+        z.object({
+          poolId: z.string(),
+          liquidityTokens: z.string(),
+        })
+      )
+      .optional()
+      .describe(
+        'Array of liquidity removal queries for batch operations. ' +
+          'Used with batchGetRemoveLiquidityQuotes to efficiently calculate multiple removals. ' +
+          'Each query specifies a pool and amount of LP tokens to remove.'
+      ),
+  })
+  .describe(
+    'Parameters for liquidity removal operations. Used to calculate expected returns when removing pool liquidity.'
+  );
 
 /**
  * Combined parameter schema for the tool
  */
-const dexParamsSchema = z.object({
-  operation: z.enum([
-    // Pool Information Operations
-    'getNumberOfPools',
-    'getPoolById',
-    'getPool',
-    'getPools',
+const dexParamsSchema = z
+  .object({
+    operation: z
+      .enum([
+        // Pool Information Operations
+        'getNumberOfPools',
+        'getPoolById',
+        'getPool',
+        'getPools',
 
-    // Trading Operations
-    'getSwapQuote',
-    'getSwapQuoteForExactOutput',
-    'getMultiHopQuote',
-    'getMultiHopQuoteForExactOutput',
-    'batchGetQuotes',
+        // Trading Operations
+        'getSwapQuote',
+        'getSwapQuoteForExactOutput',
+        'getMultiHopQuote',
+        'getMultiHopQuoteForExactOutput',
+        'batchGetQuotes',
 
-    // Liquidity Operations
-    'getLiquidityQuote',
-    'calculateLiquidityTokens',
-    'batchGetLiquidityQuotes',
+        // Liquidity Operations
+        'getLiquidityQuote',
+        'calculateLiquidityTokens',
+        'batchGetLiquidityQuotes',
 
-    // Removal Operations
-    'getRemoveLiquidityQuote',
-    'getRemoveLiquidityRangeQuotes',
-    'batchGetRemoveLiquidityQuotes',
-  ]),
+        // Removal Operations
+        'getRemoveLiquidityQuote',
+        'getRemoveLiquidityRangeQuotes',
+        'batchGetRemoveLiquidityQuotes',
+      ])
+      .describe(
+        'The specific DEX operation to perform. Each operation requires different parameters:\n' +
+          '- Pool Info: poolId or token addresses needed except for getNumberOfPools\n' +
+          '- Trading: tokenIn, tokenOut, and amount required; path for multi-hop\n' +
+          '- Liquidity: poolId and token amounts required; minimums optional\n' +
+          '- Removal: poolId and liquidityTokens required\n' +
+          'Batch operations need arrays of the respective parameters.'
+      ),
 
-  // Operation-specific parameters
-  pools: PoolsParams.optional(),
-  swap: SwapParams.optional(),
-  liquidity: LiquidityParams.optional(),
-  removal: RemovalParams.optional(),
-});
+    // Operation-specific parameters
+    pools: PoolsParams.optional(),
+    swap: SwapParams.optional(),
+    liquidity: LiquidityParams.optional(),
+    removal: RemovalParams.optional(),
+  })
+  .describe(
+    'Complete parameter schema for DEX operations. Provide the operation name and its corresponding parameters:\n' +
+      '- For pool info: use pools object\n' +
+      '- For trading: use swap object\n' +
+      '- For liquidity: use liquidity object\n' +
+      '- For removal: use removal object\n' +
+      'Each operation type has specific required and optional parameters.'
+  );
 
 export const name = 'DEX-Analysis';
 export const dexTool: CoreTool<typeof dexParamsSchema, DexToolResponse> = {
@@ -201,6 +350,8 @@ export const dexTool: CoreTool<typeof dexParamsSchema, DexToolResponse> = {
   ): Promise<DexToolResponse> => {
     try {
       const service = new DexReadService();
+
+      console.log(JSON.stringify(args));
 
       // Pool Information Operations
       if (args.operation === 'getNumberOfPools') {
