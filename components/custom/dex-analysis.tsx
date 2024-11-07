@@ -139,12 +139,7 @@ const PoolCard = ({ pool }: { pool?: PoolData }) => {
               Pool #{pool.id}
             </h3>
             <p className="text-xs text-blue-700/70 dark:text-blue-300/70">
-              Fee:{' '}
-              {(
-                (pool.swapFee.numerator / pool.swapFee.denominator) *
-                100
-              ).toFixed(2)}
-              %
+              Fee: {pool.swapFee.numerator} / {pool.swapFee.denominator}
             </p>
           </div>
         </div>
@@ -159,7 +154,7 @@ const PoolCard = ({ pool }: { pool?: PoolData }) => {
             Token 0
           </p>
           <p className="font-mono text-blue-900 dark:text-blue-100 truncate">
-            {pool.token0}
+            {pool.token0.split('.')[1]}
           </p>
           <p className="text-xs mt-1 font-medium text-blue-700 dark:text-blue-300">
             Reserve: {formatAmount(pool.reserve0)}
@@ -170,7 +165,7 @@ const PoolCard = ({ pool }: { pool?: PoolData }) => {
             Token 1
           </p>
           <p className="font-mono text-blue-900 dark:text-blue-100 truncate">
-            {pool.token1}
+            {pool.token1.split('.')[1]}
           </p>
           <p className="text-xs mt-1 font-medium text-blue-700 dark:text-blue-300">
             Reserve: {formatAmount(pool.reserve1)}

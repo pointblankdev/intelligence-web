@@ -12,6 +12,7 @@ import { ArbitrageInfo } from './dex-graph';
 import { DocumentToolCall, DocumentToolResult } from './document';
 import { Markdown } from './markdown';
 import { PreviewAttachment } from './preview-attachment';
+import { ContractResult } from './stacks-contract';
 import { SearchResult } from './stacks-search';
 import { TransactionDisplay } from './transaction-info';
 import { WalletInfo } from './wallet-info';
@@ -151,6 +152,8 @@ export const Message = ({
                         <DexInfo response={result} />
                       ) : toolName === 'Stacks-API-Search' ? (
                         <SearchResult response={result} />
+                      ) : toolName === 'Stacks-API-Contract' ? (
+                        <ContractResult response={result} />
                       ) : toolName === 'DEX-Arbitrage' ? (
                         <ArbitrageInfo response={result} />
                       ) : toolName === 'Stacks-Wallet' ? (
@@ -199,6 +202,8 @@ export const Message = ({
                         <SearchResult />
                       ) : toolName === 'DEX-Arbitrage' ? (
                         <ArbitrageInfo />
+                      ) : toolName === 'Stacks-API-Contract' ? (
+                        <ContractResult />
                       ) : toolName === 'createDocument' ? (
                         <DocumentToolCall type="create" args={args} />
                       ) : toolName === 'updateDocument' ? (
