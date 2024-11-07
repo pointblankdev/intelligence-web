@@ -369,14 +369,14 @@ export class DexReadService {
 
   /**
    * Batch fetches pool information for multiple token pairs
-   * @param pairs Array of token principal pairs
+   * @param ids Array of pool ids
    * @returns Array of pool information
    */
-  async getPools(pairs: Array<[string, string]>): Promise<PoolInfo[]> {
+  async getPools(ids: Array<string | number>): Promise<PoolInfo[]> {
     try {
       // Use Promise.all to fetch all pools in parallel
-      const poolPromises = pairs.map(([token0, token1]) =>
-        this.getPool(token0, token1).catch((error) => {
+      const poolPromises = ids.map((id) =>
+        this.getPoolById(id).catch((error) => {
           // If a specific pool is not found, we'll include null in the results
           if (error.code === DexReadErrorCode.POOL_NOT_FOUND) {
             return null;

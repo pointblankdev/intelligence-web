@@ -96,13 +96,13 @@ const PoolsParams = z
           'Used with token0 in getPool to find a specific trading pair. ' +
           'Format: SP2...<contract_address>.<token_name>'
       ),
-    pairs: z
-      .array(z.tuple([z.string(), z.string()]))
+    ids: z
+      .array(z.string())
       .optional()
       .describe(
-        'Array of token address pairs for batch pool queries. Used with getPools to efficiently fetch multiple pools at once. ' +
-          'Each pair should be [token0Address, token1Address]. ' +
-          'Example: [["SP2...token1", "SP2...token2"], ["SP2...token3", "SP2...token4"]]'
+        'Array of pool ids for batch pool queries. Used with getPools to efficiently fetch multiple pools at once. ' +
+          'Ids start at 1 and increment up to the number of pools - 1. ' +
+          'Example: [1,2,3,4,5]'
       ),
   })
   .describe(
@@ -332,7 +332,7 @@ export const dexTool: CoreTool<typeof dexParamsSchema, DexToolResponse> = {
 
     Common Use Cases:
     1. Pool Discovery:
-       getNumberOfPools -> getPoolById(>=1)
+       getNumberOfPools -> getPools
        
     2. Trading:
        getPool -> getSwapQuote -> getMultiHopQuote
@@ -385,10 +385,10 @@ export const dexTool: CoreTool<typeof dexParamsSchema, DexToolResponse> = {
       }
 
       if (args.operation === 'getPools') {
-        if (!args.pools?.pairs?.length) {
-          return { success: false, error: 'Token pairs are required' };
+        if (!args.pools?.ids?.length) {
+          return { success: false, error: 'Token ids are required' };
         }
-        const pools = await service.getPools(args.pools.pairs);
+        const pools = await service.getPools(args.pools.ids);
         return {
           success: true,
           data: { pools: pools.map(formatPoolData) },
