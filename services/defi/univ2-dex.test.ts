@@ -48,12 +48,8 @@ describe('DexReadService', () => {
     });
 
     it('should get multiple pools', async () => {
-      const pairs: [string, string][] = [
-        [TOKENS.CHA, TOKENS.SYN_WELSH],
-        [TOKENS.STX, TOKENS.CHA],
-        [TOKENS.UPDOG, TOKENS.CHA],
-      ];
-      const result = await service.getPools(pairs);
+      const ids: string[] = ['1', '2', '3'];
+      const result = await service.getPools(ids);
       console.log('Multiple pools:', result);
     });
   }, 20000);
