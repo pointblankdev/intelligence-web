@@ -20,6 +20,8 @@ import {
   standardPrincipalCV,
 } from '@stacks/transactions';
 
+import { cache } from '../cache';
+
 /**
  * Pool information returned from the DEX
  */
@@ -137,10 +139,16 @@ export class DexReadService {
   ): Promise<any> {
     try {
       const path = `/v2/contracts/call-read/${contractAddress}/${contractName}/${method}`;
+      const hexArgs = args.map((arg) => cvToHex(arg));
+
+      const key = `${path}:${hexArgs.join(':')}`;
+      const cachedResponse = await cache.get(key);
+      if (cachedResponse) return cachedResponse;
+
       const response = await this.client.POST(path as any, {
         body: {
           sender: contractAddress,
-          arguments: args.map((arg) => cvToHex(arg)),
+          arguments: hexArgs,
         },
       });
 
@@ -152,8 +160,8 @@ export class DexReadService {
         );
       }
 
-      const cv = hexToCV(response.data.result);
-      return cvToValue(cv);
+      await cache.set(key, response.data.result);
+      return cvToValue(hexToCV(response.data.result));
     } catch (error) {
       if (error instanceof DexReadError) throw error;
       console.error('Error calling read-only contract method:', error);

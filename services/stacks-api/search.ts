@@ -1,3 +1,5 @@
+import { cache } from '../cache';
+
 import { BaseStacksService } from '.';
 
 // Search result type definitions
@@ -106,6 +108,10 @@ export class StacksSearchService extends BaseStacksService {
     id: string,
     includeMetadata: boolean = false
   ): Promise<SearchResult> {
+    const key = `/extended/v1/search/${id}:${includeMetadata}`;
+    const cachedResponse = await cache.get(key);
+    if (cachedResponse) return cachedResponse as SearchResult;
+
     return this.handleRequest(
       this.client
         .GET('/extended/v1/search/{id}', {
@@ -125,6 +131,7 @@ export class StacksSearchService extends BaseStacksService {
               },
             } as NotFoundResult;
           }
+          cache.set(key, data);
           return data as SearchResult;
         })
     );

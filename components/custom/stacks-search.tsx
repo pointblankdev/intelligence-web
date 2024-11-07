@@ -20,6 +20,7 @@ import {
 import { useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 // Base Search Types
 interface BaseResult {
@@ -261,9 +262,10 @@ const ContractResult = ({
           )}
         >
           <SyntaxHighlighter
-            language="typescript"
-            style={oneDark}
+            language="lisp"
+            style={vscDarkPlus}
             customStyle={{
+              fontSize: '0.8rem',
               margin: 0,
               borderRadius: '0.5rem',
             }}
