@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     model: customModel(model.apiIdentifier),
     system: modelId === 'gpt-4o-canvas' ? canvasPrompt : regularPrompt,
     messages: coreMessages,
-    maxSteps: 10,
+    maxSteps: 20,
     experimental_activeTools: activeTools as (
       | 'createDocument'
       | 'updateDocument'

@@ -1,9 +1,11 @@
 import { CoreTool } from 'ai';
 
+import { arbitrageTool } from '@/tools/arbitrage-graph';
 import { bnsTool } from '@/tools/stacks-api/bns';
 import { contractTool } from '@/tools/stacks-api/contract';
 import { searchTool } from '@/tools/stacks-api/search';
 import { transactionTool } from '@/tools/stacks-api/transaction';
+import { dexTool } from '@/tools/univ2-dex';
 import { walletTool } from '@/tools/wallet';
 
 // We don't need to extend Tool anymore since we're using CoreTool directly
@@ -11,6 +13,8 @@ export class ToolRegistry {
   private tools: Map<string, CoreTool> = new Map();
 
   constructor() {
+    this.tools.set('DEX-Analysis', dexTool);
+    // this.tools.set('DEX-Arbitrage', arbitrageTool);
     this.tools.set('Stacks-Wallet', walletTool);
     this.tools.set('Stacks-API-BNS', bnsTool);
     this.tools.set('Stacks-API-Contract', contractTool);

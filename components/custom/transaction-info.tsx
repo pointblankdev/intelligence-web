@@ -490,7 +490,7 @@ const computeEvents = (tx: Transaction | MempoolTransaction): Events => {
   // and post conditions since events haven't occurred yet
   if (isMempoolTransaction(tx)) {
     // Analyze post conditions to predict potential events
-    tx.post_conditions.forEach((condition: any) => {
+    tx.post_conditions.forEach?.((condition: any) => {
       if (condition.type === 'stx') {
         events.stx.transfer++;
       } else if (condition.type === 'fungible') {
@@ -503,7 +503,7 @@ const computeEvents = (tx: Transaction | MempoolTransaction): Events => {
   }
 
   // For confirmed transactions, use the existing logic
-  (tx as Transaction).events?.forEach((event: any) => {
+  (tx as Transaction).events?.forEach?.((event: any) => {
     if (event.type === 'stx_transfer') {
       events.stx.transfer++;
     } else if (event.type === 'ft_transfer') {
@@ -554,7 +554,7 @@ const computeSTXMovements = (
     sent = confirmedTx.fee_rate;
   }
 
-  confirmedTx.events?.forEach((event: any) => {
+  confirmedTx.events?.forEach?.((event: any) => {
     if (event.type === 'stx_transfer') {
       if (event.sender === confirmedTx.sender_address) {
         sent = (BigInt(sent) + BigInt(event.amount)).toString();

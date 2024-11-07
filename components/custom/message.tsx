@@ -6,15 +6,15 @@ import { motion } from 'framer-motion';
 import { Code2, Sparkles } from 'lucide-react';
 import { Dispatch, ReactNode, SetStateAction } from 'react';
 
-import { generateUUID } from '@/lib/utils';
-
 import { UICanvas } from './canvas';
+import { DexInfo } from './dex-analysis';
+import { ArbitrageInfo } from './dex-graph';
 import { DocumentToolCall, DocumentToolResult } from './document';
 import { Markdown } from './markdown';
 import { PreviewAttachment } from './preview-attachment';
+import { SearchResult } from './stacks-search';
 import { TransactionDisplay } from './transaction-info';
 import { WalletInfo } from './wallet-info';
-import { Weather } from './weather';
 
 interface CodeBlockInfo {
   language: string;
@@ -147,8 +147,12 @@ export const Message = ({
 
                   return (
                     <div key={toolCallId}>
-                      {toolName === 'getWeather' ? (
-                        <Weather weatherAtLocation={result} />
+                      {toolName === 'DEX-Analysis' ? (
+                        <DexInfo response={result} />
+                      ) : toolName === 'Stacks-API-Search' ? (
+                        <SearchResult response={result} />
+                      ) : toolName === 'DEX-Arbitrage' ? (
+                        <ArbitrageInfo response={result} />
                       ) : toolName === 'Stacks-Wallet' ? (
                         <WalletInfo response={result} />
                       ) : toolName === 'Stacks-API-Transaction' ? (
@@ -189,8 +193,12 @@ export const Message = ({
                         skeleton: ['getWeather'].includes(toolName),
                       })}
                     >
-                      {toolName === 'getWeather' ? (
-                        <Weather />
+                      {toolName === 'DEX-Analysis' ? (
+                        <DexInfo />
+                      ) : toolName === 'Stacks-API-Search' ? (
+                        <SearchResult />
+                      ) : toolName === 'DEX-Arbitrage' ? (
+                        <ArbitrageInfo />
                       ) : toolName === 'createDocument' ? (
                         <DocumentToolCall type="create" args={args} />
                       ) : toolName === 'updateDocument' ? (

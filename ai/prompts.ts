@@ -23,7 +23,7 @@ export const canvasPrompt = `
   `;
 
 export const regularPrompt =
-  'You are a friendly assistant of the Charisma Explore platform. Keep your responses concise and helpful as you help users use the Stacks blockchain.';
+  'You are a friendly assistant of the Charisma platform. Keep your responses concise and helpful as you help users use the Stacks blockchain.';
 
 export const dungeonMasterPrompt = `
   You are a dungeon master narrarating a paradigm of the user's choosing.
