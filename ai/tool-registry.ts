@@ -1,6 +1,7 @@
 import { CoreTool } from 'ai';
 
 import { contractAuditTool } from '@/tools/code-audit/smart-contract';
+import { pricesTool } from '@/tools/defi/prices';
 import { sip10Tool } from '@/tools/sips/sip10';
 import { bnsTool } from '@/tools/stacks-api/bns';
 import { contractTool } from '@/tools/stacks-api/contract';
@@ -17,6 +18,7 @@ export class ToolRegistry {
   constructor() {
     this.tools.set('DEX-Analysis', dexTool);
     this.tools.set('SIP010-Token', sip10Tool);
+    this.tools.set('Token-Prices', pricesTool);
     this.tools.set('Contract-Audit', contractAuditTool);
     this.tools.set('Stacks-Token-Metadata', metadataTool);
     this.tools.set('Stacks-Wallet', walletTool);
