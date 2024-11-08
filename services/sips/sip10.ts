@@ -154,8 +154,10 @@ export class Sip10Service {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const metadata = await response.json();
-
+      let metadata = {};
+      try {
+        metadata = await response.json();
+      } catch (e) {}
       // Cache the metadata
       await cache.set(cacheKey, metadata, 36000); // Cache for 10 hours
 
@@ -356,6 +358,7 @@ export class Sip10Service {
       const uri = await this.getTokenUri(contractAddress, contractName);
       if (!uri) return {};
 
+      console.log({ uri });
       const metadata = await this.fetchMetadata(uri);
       return { uri, metadata };
     } catch (error) {

@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
 
     // Execute SIP010 tool operation
     const result = await sip10Tool.execute!(body, {});
+    console.log(result);
 
     // Return response with appropriate status
     return NextResponse.json(result, {
