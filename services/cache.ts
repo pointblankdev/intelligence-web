@@ -5,7 +5,7 @@ export const cache = {
     return await kv.get(key);
   },
 
-  set: async (key: string, value: any, ttlSeconds = 60) => {
+  set: async (key: string, value: any, ttlSeconds = 86400 * 7) => {
     return await kv.set(key, value, { ex: ttlSeconds });
   },
 };
