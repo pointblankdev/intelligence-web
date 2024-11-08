@@ -1,6 +1,6 @@
 import { CoreTool } from 'ai';
 
-import { arbitrageTool } from '@/tools/arbitrage-graph';
+import { sip10Tool } from '@/tools/sips/sip10';
 import { bnsTool } from '@/tools/stacks-api/bns';
 import { contractTool } from '@/tools/stacks-api/contract';
 import { searchTool } from '@/tools/stacks-api/search';
@@ -14,7 +14,7 @@ export class ToolRegistry {
 
   constructor() {
     this.tools.set('DEX-Analysis', dexTool);
-    // this.tools.set('DEX-Arbitrage', arbitrageTool);
+    this.tools.set('SIP010-Token', sip10Tool);
     this.tools.set('Stacks-Wallet', walletTool);
     this.tools.set('Stacks-API-BNS', bnsTool);
     this.tools.set('Stacks-API-Contract', contractTool);
