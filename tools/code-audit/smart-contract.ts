@@ -173,18 +173,18 @@ export const contractAuditTool: CoreTool<
             9 = Chaotic Extractive: Malicious contracts, rug pulls`,
           },
         ],
-        maxSteps: 5,
+        maxSteps: 1,
         experimental_activeTools: [
-          'SIP010-Token',
-          'Stacks-API-Contract',
-          'Stacks-API-Search',
-          'Stacks-API-Transaction',
+          // 'SIP010-Token',
+          // 'Stacks-API-Contract',
+          // 'Stacks-API-Search',
+          // 'Stacks-API-Transaction',
         ],
         tools: {
-          'SIP010-Token': sip10Tool,
-          'Stacks-API-Contract': contractTool,
-          'Stacks-API-Search': searchTool,
-          'Stacks-API-Transaction': transactionTool,
+          // 'SIP010-Token': sip10Tool,
+          // 'Stacks-API-Contract': contractTool,
+          // 'Stacks-API-Search': searchTool,
+          // 'Stacks-API-Transaction': transactionTool,
         },
       });
 
