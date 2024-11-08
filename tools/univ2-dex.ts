@@ -351,8 +351,6 @@ export const dexTool: CoreTool<typeof dexParamsSchema, DexToolResponse> = {
     try {
       const service = new DexReadService();
 
-      console.log(JSON.stringify(args));
-
       // Pool Information Operations
       if (args.operation === 'getNumberOfPools') {
         const count = await service.getNumberOfPools();
