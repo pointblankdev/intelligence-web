@@ -15,6 +15,7 @@ import { Markdown } from './markdown';
 import { PreviewAttachment } from './preview-attachment';
 import { ContractResult } from './stacks-contract';
 import { SearchResult } from './stacks-search';
+import { MetadataResult } from './token-metadata';
 import { TransactionDisplay } from './transaction-info';
 import { WalletInfo } from './wallet-info';
 
@@ -151,6 +152,8 @@ export const Message = ({
                     <div key={toolCallId}>
                       {toolName === 'DEX-Analysis' ? (
                         <DexInfo response={result} />
+                      ) : toolName === 'Stacks-Token-Metadata' ? (
+                        <MetadataResult response={result} />
                       ) : toolName === 'Contract-Audit' ? (
                         <ContractAuditResult response={result} />
                       ) : toolName === 'Stacks-API-Contract' ? (
@@ -203,6 +206,8 @@ export const Message = ({
                         <DexInfo />
                       ) : toolName === 'Stacks-API-Search' ? (
                         <SearchResult />
+                      ) : toolName === 'Stacks-Token-Metadata' ? (
+                        <MetadataResult />
                       ) : toolName === 'Contract-Audit' ? (
                         <ContractAuditResult />
                       ) : toolName === 'DEX-Arbitrage' ? (

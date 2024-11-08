@@ -5,6 +5,7 @@ import { sip10Tool } from '@/tools/sips/sip10';
 import { bnsTool } from '@/tools/stacks-api/bns';
 import { contractTool } from '@/tools/stacks-api/contract';
 import { searchTool } from '@/tools/stacks-api/search';
+import { metadataTool } from '@/tools/stacks-api/tokens';
 import { transactionTool } from '@/tools/stacks-api/transaction';
 import { dexTool } from '@/tools/univ2-dex';
 import { walletTool } from '@/tools/wallet';
@@ -17,6 +18,7 @@ export class ToolRegistry {
     this.tools.set('DEX-Analysis', dexTool);
     this.tools.set('SIP010-Token', sip10Tool);
     this.tools.set('Contract-Audit', contractAuditTool);
+    this.tools.set('Stacks-Token-Metadata', metadataTool);
     this.tools.set('Stacks-Wallet', walletTool);
     this.tools.set('Stacks-API-BNS', bnsTool);
     this.tools.set('Stacks-API-Contract', contractTool);
