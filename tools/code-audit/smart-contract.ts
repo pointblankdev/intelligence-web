@@ -174,20 +174,20 @@ export const contractAuditTool: CoreTool<
           },
         ],
         // gotta be careful with this, vercel apis will timeout at 15 seconds
-        maxSteps: 1,
+        maxSteps: 5,
         experimental_activeTools: [
-          // 'SIP010-Token',
-          // 'Stacks-API-Contract',
-          // 'Stacks-API-Search',
-          // 'Stacks-API-Transaction',
+          'SIP010-Token',
+          'Stacks-API-Contract',
+          'Stacks-API-Search',
+          'Stacks-API-Transaction',
         ],
         tools: {
-          // 'SIP010-Token': sip10Tool,
-          // 'Stacks-API-Contract': contractTool,
-          // 'Stacks-API-Search': searchTool,
-          // 'Stacks-API-Transaction': transactionTool,
+          'SIP010-Token': sip10Tool,
+          'Stacks-API-Contract': contractTool,
+          'Stacks-API-Search': searchTool,
+          'Stacks-API-Transaction': transactionTool,
         },
-        maxTokens: 500,
+        maxTokens: 5000,
       });
 
       let auditResult = '';

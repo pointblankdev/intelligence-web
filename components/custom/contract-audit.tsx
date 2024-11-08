@@ -274,7 +274,7 @@ export function ContractAuditResult({
                   className="text-sm text-blue-700 dark:text-blue-300"
                 >
                   {v.name}: {v.type} ({v.access})
-                  {v.currentValue.startsWith('https://') ? (
+                  {v.currentValue?.startsWith('https://') ? (
                     <Link
                       href={v.currentValue}
                       className="text-blue-600 dark:text-blue-400 underline ml-1"
