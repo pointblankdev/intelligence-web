@@ -173,7 +173,7 @@ export const contractAuditTool: CoreTool<
             9 = Chaotic Extractive: Malicious contracts, rug pulls`,
           },
         ],
-        maxSteps: 10,
+        maxSteps: 5,
         experimental_activeTools: [
           'SIP010-Token',
           'Stacks-API-Contract',
@@ -239,6 +239,7 @@ export const contractAuditTool: CoreTool<
       return {
         success: true,
         data: audit,
+        cached: false,
       };
     } catch (error) {
       console.error('Contract audit error:', error);

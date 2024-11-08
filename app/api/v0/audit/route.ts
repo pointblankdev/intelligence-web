@@ -39,9 +39,6 @@ export async function POST(req: NextRequest) {
     // Execute contract audit tool operation
     const result = await contractAuditTool.execute!(body, {});
 
-    // Set cache duration based on forceRefresh parameter
-    const cacheDuration = body.forceRefresh ? 60 : 3600; // 1 minute vs 1 hour
-
     // Return response with appropriate status
     return NextResponse.json(result, {
       status: result.success ? 200 : 400,
