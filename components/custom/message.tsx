@@ -13,12 +13,12 @@ import { ArbitrageInfo } from './dex-graph';
 import { DocumentToolCall, DocumentToolResult } from './document';
 import { Markdown } from './markdown';
 import { PreviewAttachment } from './preview-attachment';
+import { PricesResult } from './prices';
 import { ContractResult } from './stacks-contract';
 import { SearchResult } from './stacks-search';
 import { MetadataResult } from './token-metadata';
 import { TransactionDisplay } from './transaction-info';
 import { WalletInfo } from './wallet-info';
-import PricesResult from './prices';
 
 interface CodeBlockInfo {
   language: string;
