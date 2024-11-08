@@ -160,7 +160,7 @@ export class DexReadService {
         );
       }
 
-      await cache.set(key, response.data.result);
+      await cache.set(key, response.data.result, 3600);
       return cvToValue(hexToCV(response.data.result));
     } catch (error) {
       if (error instanceof DexReadError) throw error;
