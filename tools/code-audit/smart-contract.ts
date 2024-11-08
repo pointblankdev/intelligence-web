@@ -3,6 +3,7 @@ import { CoreTool, streamText } from 'ai';
 import { z } from 'zod';
 
 import { customModel } from '@/ai';
+import { toolRegistry } from '@/ai/tool-registry';
 import { ContractService } from '@/services/stacks-api/contract';
 
 import {
@@ -11,6 +12,10 @@ import {
   safeValidateAuditResponse,
   type AuditResponse,
 } from './schema';
+import sip10Tool from '../sips/sip10';
+import { contractTool } from '../stacks-api/contract';
+import { searchTool } from '../stacks-api/search';
+import { transactionTool } from '../stacks-api/transaction';
 
 // Input parameters schema
 const contractAuditParamsSchema = z.object({
@@ -77,15 +82,16 @@ export const contractAuditTool: CoreTool<
             role: 'user',
             content: `Analyze this Clarity smart contract and provide a comprehensive audit in strict JSON format.
             Pay special attention to:
-            1. Fungible tokens and their tokenIdentifiers
+            1. Fungible tokens and their tokenIdentifiers (ft-token definition name)
             2. Data variables and maps defined in the contract
-            3. Values that would need to be stored in Arcana
-            4. Alignment classification with detailed reasoning
+            3. Function definitions and their parameters
+            4. Values that would need to be stored in Arcana
+            5. Alignment classification with detailed reasoning
 
             Contract source:
             ${contract.source_code}
 
-            Response must be valid JSON matching exactly this structure:
+            Response must be only valid JSON matching exactly this structure with no other text or comments allowed so it can be parsed by automated tools:
             {
               "fungibleTokens": [{
                 "name": string,
@@ -110,6 +116,44 @@ export const contractAuditTool: CoreTool<
                 "keyType": string, 
                 "valueType": string,
                 "description": string
+              }]
+              "readOnlyFunctions": [{
+                "name": string,
+                "description": string (optional),
+                "parameters": [{
+                  "name": string,
+                  "type": string,
+                  "description": string (optional)
+                }],
+                "response": {
+                  "type": string,
+                  "description": string (optional)
+                },
+                "access": "read-only",
+                "costEstimate": {
+                  "runtime": number (optional),
+                  "read_count": number (optional),
+                  "write_count": number (optional)
+                }
+              }],
+              "publicFunctions": [{
+                "name": string,
+                "description": string (optional),
+                "parameters": [{
+                  "name": string,
+                  "type": string,
+                  "description": string (optional)
+                }],
+                "response": {
+                  "type": string,
+                  "description": string (optional)
+                },
+                "access": "public",
+                "costEstimate": {
+                  "runtime": number (optional),
+                  "read_count": number (optional),
+                  "write_count": number (optional)
+                }
               }],
               "arcanaRecommendation": {
                 "alignment": number (0-9, based on criteria below),
@@ -130,7 +174,19 @@ export const contractAuditTool: CoreTool<
             9 = Chaotic Extractive: Malicious contracts, rug pulls`,
           },
         ],
-        maxTokens: 4000,
+        maxSteps: 10,
+        experimental_activeTools: [
+          'SIP010-Token',
+          'Stacks-API-Contract',
+          'Stacks-API-Search',
+          'Stacks-API-Transaction',
+        ],
+        tools: {
+          'SIP010-Token': sip10Tool,
+          'Stacks-API-Contract': contractTool,
+          'Stacks-API-Search': searchTool,
+          'Stacks-API-Transaction': transactionTool,
+        },
       });
 
       let auditResult = '';
@@ -144,7 +200,8 @@ export const contractAuditTool: CoreTool<
       // Validate the AI response
       let parsedResponse: AuditResponse;
       try {
-        const jsonResponse = JSON.parse(auditResult);
+        const jsonResponse = extractAndParseJson(auditResult);
+        console.log(jsonResponse);
         const validationResult = safeValidateAuditResponse(jsonResponse);
 
         if (!validationResult.success) {
@@ -196,3 +253,74 @@ export const contractAuditTool: CoreTool<
 };
 
 export default contractAuditTool;
+
+/**
+ * Safely extracts JSON content from text by finding the outermost matching curly braces
+ * @param text Text potentially containing JSON
+ * @returns The extracted JSON string or null if no valid JSON structure found
+ */
+export function extractJsonContent(text: string): string | null {
+  try {
+    // Remove any leading or trailing whitespace
+    const trimmed = text.trim();
+
+    // Find first opening brace
+    const firstBrace = trimmed.indexOf('{');
+    if (firstBrace === -1) return null;
+
+    let braceCount = 0;
+    let lastClosingBrace = -1;
+
+    // Iterate through the string tracking brace pairs
+    for (let i = 0; i < trimmed.length; i++) {
+      const char = trimmed[i];
+      if (char === '{') {
+        braceCount++;
+      } else if (char === '}') {
+        braceCount--;
+        if (braceCount === 0) {
+          lastClosingBrace = i;
+          // Found complete JSON object, check if there are any other JSON objects
+          const remaining = trimmed.slice(i + 1).trim();
+          if (remaining.startsWith('{')) {
+            // Found another JSON object, this might be an error
+            console.warn('Multiple JSON objects found in response');
+          }
+          break;
+        }
+      }
+    }
+
+    // If we found a matching pair of braces
+    if (lastClosingBrace !== -1) {
+      const extracted = trimmed.slice(firstBrace, lastClosingBrace + 1);
+
+      // Validate that it's actually valid JSON
+      JSON.parse(extracted); // This will throw if invalid
+
+      return extracted;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error extracting JSON:', error);
+    return null;
+  }
+}
+
+/**
+ * Safely extracts and parses JSON content
+ * @param text Text potentially containing JSON
+ * @returns Parsed JSON object or null if invalid
+ */
+export function extractAndParseJson<T = any>(text: string): T | null {
+  try {
+    const jsonContent = extractJsonContent(text);
+    if (!jsonContent) return null;
+
+    return JSON.parse(jsonContent) as T;
+  } catch (error) {
+    console.error('Error parsing JSON:', error);
+    return null;
+  }
+}
