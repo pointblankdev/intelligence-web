@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       return errorResponse('contractId is required', 400);
     }
 
-    body.forceRefresh = false; // Default to false
+    body.forceRefresh = true; // Default to false
 
     // Execute contract audit tool operation
     const result = await contractAuditTool.execute!(body, {});
@@ -45,11 +45,6 @@ export async function POST(req: NextRequest) {
     // Return response with appropriate status
     return NextResponse.json(result, {
       status: result.success ? 200 : 400,
-      headers: {
-        'Cache-Control': result.success
-          ? `public, max-age=${cacheDuration}, stale-while-revalidate=${cacheDuration * 2}` // Cache successful responses
-          : 'no-store', // Don't cache errors
-      },
     });
   } catch (error) {
     console.error('Contract Audit API Error:', error);

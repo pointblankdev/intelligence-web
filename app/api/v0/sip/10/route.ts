@@ -35,11 +35,6 @@ export async function POST(req: NextRequest) {
     // Return response with appropriate status
     return NextResponse.json(result, {
       status: result.success ? 200 : 400,
-      headers: {
-        'Cache-Control': result.success
-          ? 'public, max-age=30, stale-while-revalidate=60' // Cache successful responses
-          : 'no-store', // Don't cache errors
-      },
     });
   } catch (error) {
     console.error('SIP010 API Error:', error);
