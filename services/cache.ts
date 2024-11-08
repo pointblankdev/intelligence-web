@@ -5,7 +5,7 @@ export const cache = {
     return await kv.get(key);
   },
 
-  set: async (key: string, value: any, ttlSeconds = TTL.ONE_MINUTE) => {
+  set: async (key: string, value: any, ttlSeconds = 60) => {
     return await kv.set(key, value, { ex: ttlSeconds });
   },
 };
