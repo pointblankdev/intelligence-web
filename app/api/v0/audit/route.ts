@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       return errorResponse('contractId is required', 400);
     }
 
-    body.forceRefresh = false; // Default to false
+    body.forceRefresh = true; // Default to false
 
     // Execute contract audit tool operation
     const result = await contractAuditTool.execute!(body, {});
