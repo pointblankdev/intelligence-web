@@ -101,6 +101,7 @@ export const contractAuditTool: CoreTool<
                 "isTransferable": boolean,
                 "isMintable": boolean,
                 "isBurnable": boolean,
+                "isLpToken": boolean,
                 "totalSupply": string (optional),
                 "maxSupply": string (optional)
               }],

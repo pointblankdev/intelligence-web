@@ -8,6 +8,7 @@ const fungibleTokenSchema = z.object({
   isTransferable: z.boolean().describe('Whether token can be transferred'),
   isMintable: z.boolean().describe('Whether new tokens can be minted'),
   isBurnable: z.boolean().describe('Whether tokens can be burned'),
+  isLpToken: z.boolean().describe('Whether this is a liquidity pool token'),
   totalSupply: z
     .string()
     .nullable()
