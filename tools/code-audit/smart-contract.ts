@@ -1,104 +1,16 @@
 import { kv } from '@vercel/kv';
-import { CoreTool, streamText, StreamingTextResponse, StreamData } from 'ai';
+import { CoreTool, streamText } from 'ai';
 import { z } from 'zod';
 
 import { customModel } from '@/ai';
 import { ContractService } from '@/services/stacks-api/contract';
 
-// Arcana-specific metrics interface
-interface ArcanaMetrics {
-  alignment: number; // 0-9
-  qualityScore: number; // 0-10000
-  circulatingSupply: number;
-  metadataUri: string;
-}
-
-// Token interfaces
-interface FungibleToken {
-  name: string;
-  symbol: string;
-  decimals: number;
-  tokenIdentifier: string;
-  isTransferable: boolean;
-  isMintable: boolean;
-  isBurnable: boolean;
-  totalSupply?: string;
-  maxSupply?: string;
-  arcana?: ArcanaMetrics;
-}
-
-interface ContractAudit {
-  contractId: string;
-  deploymentInfo: {
-    blockHeight: number;
-    txId: string;
-    clarityVersion: number | null;
-  };
-  fungibleTokens: FungibleToken[];
-  nonFungibleTokens: {
-    name: string;
-    assetIdentifier: string;
-    isMintable: boolean;
-    isTransferable: boolean;
-    totalSupply?: string;
-    arcana?: ArcanaMetrics;
-  }[];
-  publicFunctions: {
-    name: string;
-    access: 'public' | 'read_only';
-    args: { name: string; type: string }[];
-    outputs: { type: string };
-  }[];
-  traits: {
-    name: string;
-    isImplemented: boolean;
-    missingFunctions?: string[];
-  }[];
-  variables: {
-    name: string;
-    type: string;
-    access: 'public' | 'private';
-    constant: boolean;
-    currentValue?: string;
-  }[];
-  maps: {
-    name: string;
-    keyType: string;
-    valueType: string;
-    description: string;
-  }[];
-  arcanaRecommendation: ArcanaMetrics;
-  permissions: {
-    canMint: boolean;
-    canBurn: boolean;
-    hasAdminFunctions: boolean;
-    hasEmergencyFunctions: boolean;
-    hasPauseFunctionality: boolean;
-  };
-  security: {
-    hasRoleBasedAccess: boolean;
-    hasOwnershipControl: boolean;
-    hasTimelock: boolean;
-    hasFlashLoanPrevention: boolean;
-  };
-  analysis: {
-    riskLevel: 'low' | 'medium' | 'high';
-    warnings: string[];
-    recommendations: string[];
-  };
-}
-
-// Cache constants
-const CACHE_KEY_PREFIX = 'contract-audit:';
-const CACHE_DURATION = 60 * 60 * 24 * 365; // 1 year in seconds
-
-// Response type
-type ContractAuditResponse = {
-  success: boolean;
-  data?: ContractAudit;
-  error?: string;
-  cached?: boolean;
-};
+import {
+  ContractAudit,
+  validateAuditResponse,
+  safeValidateAuditResponse,
+  type AuditResponse,
+} from './schema';
 
 // Input parameters schema
 const contractAuditParamsSchema = z.object({
@@ -113,10 +25,21 @@ const contractAuditParamsSchema = z.object({
     .describe('Force refresh the audit cache only when asked'),
 });
 
+// Response type
+type ContractAuditResponse = {
+  success: boolean;
+  data?: ContractAudit;
+  error?: string;
+  cached?: boolean;
+};
+
+// Cache constants
+const CACHE_KEY_PREFIX = 'contract-audit:';
+const CACHE_DURATION = 60 * 60 * 24 * 365; // 1 year in seconds
+
 // Initialize services
 const contractService = new ContractService();
 
-// Main tool implementation
 export const name = 'Contract-Audit';
 export const contractAuditTool: CoreTool<
   typeof contractAuditParamsSchema,
@@ -127,7 +50,6 @@ export const contractAuditTool: CoreTool<
     'Performs a comprehensive audit of a Clarity smart contract with Arcana metrics analysis',
 
   execute: async (args) => {
-    console.log(args);
     try {
       const cacheKey = `${CACHE_KEY_PREFIX}${args.contractId}`;
 
@@ -148,54 +70,22 @@ export const contractAuditTool: CoreTool<
       // Stream the analysis using Claude
       const { fullStream } = await streamText({
         model: customModel('claude-3-5-sonnet-20241022'),
-        system: `You are an expert Clarity smart contract auditor with deep understanding of the common Stacks smart contract attack vectors.
-                You will analyze contracts and provide detailed security audits in JSON format.`,
+        system: `You are an expert Clarity smart contract auditor with deep understanding of common Stacks smart contract attack vectors.
+                You will analyze contracts and provide detailed security audits in strict JSON format with no additional text or comments.`,
         messages: [
           {
             role: 'user',
-            content: `Analyze this Clarity smart contract and provide a comprehensive security audit report in JSON format.
+            content: `Analyze this Clarity smart contract and provide a comprehensive audit in strict JSON format.
             Pay special attention to:
             1. Fungible tokens and their tokenIdentifiers
             2. Data variables and maps defined in the contract
-            3. Current values that would need to be stored in Arcana contract
-            4. Recommended Arcana metrics based on contract analysis
-            5. Alignment Classification: A classification for each smart contract, providing a framework 
-               to understand its nature, intent, and potential impact. Alignments are represented by 
-               uint values from 0 to 9, where:
-            
-                0 = Undefined
-          
-                1 = Lawful Constructive: Contracts with strong principles aimed at creating value within defined rules.
-                  Examples: Transparent governance protocols, Audited lending platforms, Verified charity distribution contracts
-          
-                2 = Neutral Constructive: Contracts that create value with more flexible methods.
-                  Examples: Adaptive yield optimization protocols, Community-driven grant distribution contracts
-          
-                3 = Chaotic Constructive: Contracts promoting individual freedom while aiming to create value.
-                  Examples: Decentralized identity management contracts, Privacy-preserving transaction protocols
-          
-                4 = Lawful Neutral: Contracts with strict adherence to predefined rules, prioritizing consistency.
-                  Examples: Algorithmic stablecoin contracts, Automated market maker contracts, Trustless escrow contracts
-          
-                5 = True Neutral: Contracts that function without bias, simply enabling interactions.
-                  Examples: Basic token swap contracts, Cross-chain bridge contracts, Oracle data feed contracts
-          
-                6 = Chaotic Neutral: Contracts allowing high degrees of freedom and unpredictability.
-                  Examples: Experimental DeFi protocol contracts, Permissionless liquidity pool contracts
-          
-                7 = Lawful Extractive: Contracts that operate within system rules but extract disproportionate value.
-                  Examples: High-fee transaction protocols, Rent-seeking governance contracts
-          
-                8 = Neutral Extractive: Contracts designed for value extraction without explicit harmful intent.
-                  Examples: Aggressive yield farming contracts, Frontrunning MEV bot contracts
-          
-                9 = Chaotic Extractive: Contracts designed primarily for exploitation or harm.
-                  Examples: Rug pull contracts, Wallet drainer contracts, Ponzi scheme contracts
+            3. Values that would need to be stored in Arcana
+            4. Alignment classification with detailed reasoning
 
             Contract source:
             ${contract.source_code}
 
-            The response should be valid JSON with this structure with no other text or comments:
+            Response must be valid JSON matching exactly this structure:
             {
               "fungibleTokens": [{
                 "name": string,
@@ -205,15 +95,15 @@ export const contractAuditTool: CoreTool<
                 "isTransferable": boolean,
                 "isMintable": boolean,
                 "isBurnable": boolean,
-                "totalSupply": string?,
-                "maxSupply": string?,
+                "totalSupply": string (optional),
+                "maxSupply": string (optional)
               }],
               "variables": [{
                 "name": string,
                 "type": string,
                 "access": "public" | "private",
                 "constant": boolean,
-                "currentValue": string?
+                "currentValue": string (optional)
               }],
               "maps": [{
                 "name": string,
@@ -222,10 +112,22 @@ export const contractAuditTool: CoreTool<
                 "description": string
               }],
               "arcanaRecommendation": {
-                "alignment": number (0-9),
-                "reasoning": string
+                "alignment": number (0-9, based on criteria below),
+                "reasoning": string (explain alignment choice)
               }
-            }`,
+            }
+
+            Alignment Scale:
+            0 = Undefined
+            1 = Lawful Constructive: Transparent governance, audited lending
+            2 = Neutral Constructive: Yield optimization, community-driven
+            3 = Chaotic Constructive: Privacy protocols, decentralized identity
+            4 = Lawful Neutral: AMMs, stablecoins, escrow
+            5 = True Neutral: Basic tokens, simple contracts
+            6 = Chaotic Neutral: Experimental DeFi
+            7 = Lawful Extractive: High-fee protocols
+            8 = Neutral Extractive: MEV, aggressive farming
+            9 = Chaotic Extractive: Malicious contracts, rug pulls`,
           },
         ],
         maxTokens: 4000,
@@ -233,18 +135,36 @@ export const contractAuditTool: CoreTool<
 
       let auditResult = '';
 
-      // Process the stream
       for await (const delta of fullStream) {
-        const { type } = delta;
-        if (type === 'text-delta') {
-          const { textDelta } = delta;
-          auditResult += textDelta;
+        if (delta.type === 'text-delta') {
+          auditResult += delta.textDelta;
         }
       }
 
-      console.log('Contract audit result:', auditResult);
+      // Validate the AI response
+      let parsedResponse: AuditResponse;
+      try {
+        const jsonResponse = JSON.parse(auditResult);
+        const validationResult = safeValidateAuditResponse(jsonResponse);
 
-      // Parse and combine the results
+        if (!validationResult.success) {
+          console.error('Validation errors:', validationResult.error);
+          return {
+            success: false,
+            error: 'AI generated invalid audit format',
+          };
+        }
+
+        parsedResponse = validationResult.data;
+      } catch (error) {
+        console.error('JSON parse error:', error);
+        return {
+          success: false,
+          error: 'Failed to parse AI response',
+        };
+      }
+
+      // Combine validated response with contract info
       const audit: ContractAudit = {
         contractId: args.contractId,
         deploymentInfo: {
@@ -252,10 +172,10 @@ export const contractAuditTool: CoreTool<
           txId: contract.tx_id,
           clarityVersion: contract.clarity_version,
         },
-        ...JSON.parse(auditResult),
+        ...parsedResponse,
       };
 
-      // Cache the results
+      // Cache the validated results
       await kv.set(cacheKey, audit, {
         ex: CACHE_DURATION,
       });
