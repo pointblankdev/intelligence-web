@@ -18,6 +18,7 @@ import { SearchResult } from './stacks-search';
 import { MetadataResult } from './token-metadata';
 import { TransactionDisplay } from './transaction-info';
 import { WalletInfo } from './wallet-info';
+import PricesResult from './prices';
 
 interface CodeBlockInfo {
   language: string;
@@ -152,6 +153,8 @@ export const Message = ({
                     <div key={toolCallId}>
                       {toolName === 'DEX-Analysis' ? (
                         <DexInfo response={result} />
+                      ) : toolName === 'Token-Prices' ? (
+                        <PricesResult response={result} />
                       ) : toolName === 'Stacks-Token-Metadata' ? (
                         <MetadataResult response={result} />
                       ) : toolName === 'Contract-Audit' ? (
@@ -208,6 +211,8 @@ export const Message = ({
                         <SearchResult />
                       ) : toolName === 'Stacks-Token-Metadata' ? (
                         <MetadataResult />
+                      ) : toolName === 'Token-Prices' ? (
+                        <PricesResult />
                       ) : toolName === 'Contract-Audit' ? (
                         <ContractAuditResult />
                       ) : toolName === 'DEX-Arbitrage' ? (
