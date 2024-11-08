@@ -56,31 +56,3 @@ export async function POST(req: NextRequest) {
     return errorResponse('Internal server error', 500);
   }
 }
-
-// Optional: Add HEAD method for health checks
-export async function HEAD() {
-  return new Response(null, { status: 200 });
-}
-
-// Configure route options
-export const dynamic = 'force-dynamic'; // Ensure route isn't statically optimized
-export const runtime = 'nodejs'; // Use Node.js runtime for better stability with Vercel KV
-
-// Cache revalidation config
-export const revalidate = 3600; // Revalidate cache every hour
-
-// CORS configuration if needed
-export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, HEAD, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Max-Age': '86400',
-};
-
-// Add OPTIONS method for CORS preflight
-export async function OPTIONS() {
-  return new Response(null, {
-    status: 204,
-    headers: corsHeaders,
-  });
-}
