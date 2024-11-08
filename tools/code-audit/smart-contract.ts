@@ -173,6 +173,7 @@ export const contractAuditTool: CoreTool<
             9 = Chaotic Extractive: Malicious contracts, rug pulls`,
           },
         ],
+        // gotta be careful with this, vercel apis will timeout at 15 seconds
         maxSteps: 1,
         experimental_activeTools: [
           // 'SIP010-Token',
@@ -186,6 +187,7 @@ export const contractAuditTool: CoreTool<
           // 'Stacks-API-Search': searchTool,
           // 'Stacks-API-Transaction': transactionTool,
         },
+        maxTokens: 500,
       });
 
       let auditResult = '';
