@@ -3,12 +3,10 @@ import { CoreTool, streamText } from 'ai';
 import { z } from 'zod';
 
 import { customModel } from '@/ai';
-import { toolRegistry } from '@/ai/tool-registry';
 import { ContractService } from '@/services/stacks-api/contract';
 
 import {
   ContractAudit,
-  validateAuditResponse,
   safeValidateAuditResponse,
   type AuditResponse,
 } from './schema';
