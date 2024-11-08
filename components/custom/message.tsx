@@ -7,6 +7,7 @@ import { Code2, Sparkles } from 'lucide-react';
 import { Dispatch, ReactNode, SetStateAction } from 'react';
 
 import { UICanvas } from './canvas';
+import { ContractAuditResult } from './contract-audit';
 import { DexInfo } from './dex-analysis';
 import { ArbitrageInfo } from './dex-graph';
 import { DocumentToolCall, DocumentToolResult } from './document';
@@ -150,7 +151,9 @@ export const Message = ({
                     <div key={toolCallId}>
                       {toolName === 'DEX-Analysis' ? (
                         <DexInfo response={result} />
-                      ) : toolName === 'Stacks-API-Search' ? (
+                      ) : toolName === 'Contract-Audit' ? (
+                        <ContractAuditResult response={result} />
+                      ) : toolName === 'Stacks-API-Contract' ? (
                         <SearchResult response={result} />
                       ) : toolName === 'Stacks-API-Contract' ? (
                         <ContractResult response={result} />
@@ -200,6 +203,8 @@ export const Message = ({
                         <DexInfo />
                       ) : toolName === 'Stacks-API-Search' ? (
                         <SearchResult />
+                      ) : toolName === 'Contract-Audit' ? (
+                        <ContractAuditResult />
                       ) : toolName === 'DEX-Arbitrage' ? (
                         <ArbitrageInfo />
                       ) : toolName === 'Stacks-API-Contract' ? (
