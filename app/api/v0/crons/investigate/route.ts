@@ -12,12 +12,12 @@ const errorResponse = (message: string, status: number = 400) => {
   return NextResponse.json({ success: false, error: message }, { status });
 };
 
-export async function GET(req: NextRequest, res: NextResponse) {
+export async function GET(req: NextRequest) {
   try {
     if (
       req.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`
     ) {
-      return res.json();
+      return NextResponse.json({ success: false, error: 'Unauthorized' });
     }
     // Stream the discovery process using Claude
     const { fullStream } = await streamText({
