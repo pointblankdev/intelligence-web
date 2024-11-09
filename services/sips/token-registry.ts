@@ -2,6 +2,8 @@ import { kv } from '@vercel/kv';
 
 import { ContractAudit } from '@/tools/code-audit/schema';
 
+import { StacksSearchService } from '../stacks-api/search';
+
 export interface LpTokenInfo {
   dex: 'charisma' | string;
   poolId: string;
@@ -15,6 +17,11 @@ export class TokenRegistryService {
    */
   async addContract(contractId: string): Promise<void> {
     await kv.sadd('tokens:contracts', contractId);
+    await this.updateLastSeen(contractId);
+  }
+
+  async removeContract(contractId: string): Promise<void> {
+    await kv.srem('tokens:contracts', contractId);
     await this.updateLastSeen(contractId);
   }
 
@@ -137,6 +144,13 @@ export class TokenRegistryService {
     ]);
   }
 
+  async unregisterLpToken(lpToken: string, info: LpTokenInfo): Promise<void> {
+    await Promise.all([
+      kv.srem('tokens:lp-tokens', lpToken),
+      kv.del(`tokens:lp:${lpToken}`),
+    ]);
+  }
+
   async getLpTokenInfo(lpToken: string): Promise<LpTokenInfo | null> {
     return kv.get(`tokens:lp:${lpToken}`);
   }
@@ -168,6 +182,10 @@ export class TokenRegistryService {
    */
   async addPoolForToken(token: string, poolId: string): Promise<void> {
     await kv.sadd(`tokens:pools:${token}`, poolId);
+  }
+
+  async removePoolForToken(token: string, poolId: string): Promise<void> {
+    await kv.srem(`tokens:pools:${token}`, poolId);
   }
 
   async getTokenPools(token: string): Promise<string[]> {
@@ -301,9 +319,16 @@ export class TokenRegistryService {
 
     for (const contractId of contracts) {
       const lastSeen = await this.getLastSeen(contractId);
-      if (lastSeen && now - lastSeen > maxAge) {
-        console.log(`Could clean up stale contract: ${contractId}`);
-      }
+
+      console.log(`Validating contract existance: ${contractId}`);
+      const search = new StacksSearchService();
+      const result = await search.searchContract(contractId, true);
+      if (!result.found)
+        if (lastSeen && now - lastSeen > maxAge) {
+          console.log(`Could clean up stale contract: ${contractId}`);
+          const search = new StacksSearchService();
+          search.searchContract(contractId, true);
+        }
     }
   }
 }
