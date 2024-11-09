@@ -215,7 +215,7 @@ export const EnrichedTokenDisplay = ({ token }: { token: any }) => {
                   <span className="font-medium">DEX:</span> {token.lpInfo.dex}
                 </div>
                 <CopyableText text={token.lpInfo.poolId} label="Pool" />
-                <div className="mt-1 grid grid-cols-2 gap-2">
+                <div className="mt-1 grid grid-cols-1 gap-2">
                   <CopyableText text={token.lpInfo.token0} label="Token0" />
                   <CopyableText text={token.lpInfo.token1} label="Token1" />
                 </div>
