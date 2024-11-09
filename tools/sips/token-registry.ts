@@ -11,6 +11,7 @@ const tokenRegistryParamsSchema = z.object({
       'registerToken',
       'registerSymbol',
       'registerLpToken',
+      'addPoolForToken',
 
       // Queries
       'getTokenInfo',
@@ -39,6 +40,9 @@ const tokenRegistryParamsSchema = z.object({
   // Token identification
   contractId: z.string().optional().describe('Contract principal'),
   symbol: z.string().optional().describe('Token symbol'),
+
+  // Pool data
+  poolId: z.string().optional().describe('Pool identifier'),
 
   // Operation data
   metadata: z.record(z.any()).optional().describe('Token metadata'),
@@ -79,6 +83,7 @@ Operations:
    registerToken(contractId, metadata?) - Add new token with optional metadata
    registerSymbol(contractId, symbol, force?) - Map symbol to contract
    registerLpToken(contractId, lpInfo) - Register LP token with pool data
+   addPoolForToken(contractId, poolId) - Add pool relationship for token
 
 2. Queries:
    getTokenInfo(contractId) - Get enriched token data
@@ -111,7 +116,7 @@ AI Guidelines:
 - Check registry before adding new tokens
 - Update incomplete/outdated information
 - Ask user to clarify conflicting data
-- Prioritize basic metadata, relationships, audits, prices`,
+- Prioritize basic metadata, relationships, audits`,
 
   execute: async (args) => {
     try {
@@ -136,6 +141,26 @@ AI Guidelines:
             data: {
               contractId: args.contractId,
               registered: true,
+            },
+          };
+        }
+
+        case 'addPoolForToken': {
+          if (!args.contractId || !args.poolId) {
+            return {
+              success: false,
+              error: 'Contract ID and pool ID required',
+            };
+          }
+
+          await tokenRegistry.addPoolForToken(args.contractId, args.poolId);
+
+          return {
+            success: true,
+            data: {
+              contractId: args.contractId,
+              poolId: args.poolId,
+              added: true,
             },
           };
         }
