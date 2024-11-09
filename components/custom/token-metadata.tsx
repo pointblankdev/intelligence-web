@@ -45,13 +45,13 @@ const TokenImage = ({
   if (!src) return null;
 
   return (
-    <div className="relative rounded-lg overflow-hidden">
+    <div className="relative overflow-hidden">
       <Image
         src={src}
         alt={alt}
         width={size}
         height={size}
-        className="object-cover"
+        className="object-cover rounded-lg"
       />
     </div>
   );

@@ -13,6 +13,13 @@ const nextConfig: NextConfig = {
       {
         hostname: 'raw.githubusercontent.com',
       },
+      {
+        hostname: 'charisma.rocks',
+      },
+      {
+        hostname:
+          'bafkreifq2bezvmjwfztjt4s3clt7or43kewxtg4ntbqur6axnh5qchkemu.ipfs.nftstorage.link',
+      },
     ],
   },
 };
