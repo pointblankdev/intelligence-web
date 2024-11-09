@@ -28,7 +28,7 @@ export async function GET(req: NextRequest, res: NextResponse) {
         {
           role: 'user',
           content: `Analyze 5 recent transactions to find new contracts. 
-          For each potential contract:
+          For one potential contract:
           1. Check if it exists in the registry using Token-Registry tool
           2. If not found, get the contract info using Stacks-API-Contract tool
           3. Verify if it's a valid token using SIP010-Token tool
