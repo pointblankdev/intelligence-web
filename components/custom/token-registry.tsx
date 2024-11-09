@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import EnrichedTokenDisplay from './enriched-token';
 
 // Helper components
 const Skeleton = ({ className }: { className?: string }) => (
@@ -163,7 +164,7 @@ const ResolveSymbolResult = ({ data }: { data: any }) => (
 const UpdateMetadataResult = ({ data }: { data: any }) => (
   <div className="rounded-xl p-6 bg-teal-100 dark:bg-teal-900/20">
     <div className="flex items-center gap-3">
-      <div className="size-12 rounded-lg bg-teal-200 dark:bg-teal-800 flex items-center justify-center">
+      <div className="size-12 rounded-lg bg-teal-200 dark:bg-teal-800 flex items-center justify-center min-w-12">
         <Info className="size-6 text-teal-700 dark:text-teal-300" />
       </div>
       <div className="space-y-2">
@@ -171,8 +172,8 @@ const UpdateMetadataResult = ({ data }: { data: any }) => (
           Metadata Updated
         </h3>
         <CopyableText text={data.contractId} label="Contract" />
-        <div className="p-2 bg-white/50 dark:bg-black/50 rounded text-sm">
-          <pre className="text-xs font-mono overflow-x-auto">
+        <div className="rounded text-sm">
+          <pre className="text-xs font-mono text-wrap">
             {JSON.stringify(data.metadata, null, 2)}
           </pre>
         </div>
@@ -453,6 +454,8 @@ export function TokenRegistryResult({
   // Handle operation-specific results
   if (response && !response.data.tokens) {
     switch (operation) {
+      case 'getTokenInfo':
+        return <EnrichedTokenDisplay token={response.data} />;
       case 'registerToken':
         return <RegisterTokenResult data={response.data} />;
       case 'registerSymbol':
