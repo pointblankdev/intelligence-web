@@ -93,7 +93,10 @@ const TokenMetadata = ({ token }: { token: any }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const imageUrl =
-    token.image_canonical_uri || token.image_uri || token.metadata?.image;
+    token.image_canonical_uri ||
+    token.image_uri ||
+    token.metadata?.image ||
+    token.image;
 
   return (
     <div className="p-6 rounded-lg bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-800 shadow-sm">
