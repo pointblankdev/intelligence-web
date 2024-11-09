@@ -13,41 +13,6 @@ const errorResponse = (message: string, status: number = 400) => {
   );
 };
 
-// Validate allowed operations
-const LIST_OPERATIONS = [
-  'getTokenInfo',
-  'resolveSymbol',
-  'getLpTokens',
-  'listAll',
-  'listSymbols',
-  'listMetadata',
-  'listLpTokens',
-  'listAudits',
-  'listPools',
-  'listPrices',
-] as const;
-
-type ListOperation = (typeof LIST_OPERATIONS)[number];
-
-// Type guard for operations
-const isListOperation = (operation: string): operation is ListOperation => {
-  return LIST_OPERATIONS.includes(operation as ListOperation);
-};
-
-// Required parameters for each operation
-const REQUIRED_PARAMS: Record<ListOperation, string[]> = {
-  getTokenInfo: ['contractId'],
-  resolveSymbol: ['symbol'],
-  getLpTokens: ['contractId'],
-  listAll: [],
-  listSymbols: [],
-  listMetadata: [],
-  listLpTokens: [],
-  listAudits: [],
-  listPools: [],
-  listPrices: [],
-};
-
 export async function POST(req: NextRequest) {
   try {
     // Validate content type
@@ -56,45 +21,10 @@ export async function POST(req: NextRequest) {
       return errorResponse('Content-Type must be application/json', 415);
     }
 
-    // Parse request body
-    let body: { operation: ListOperation; [key: string]: any };
-    try {
-      body = await req.json();
-    } catch (e) {
-      return errorResponse('Invalid JSON payload', 400);
-    }
-
-    // Validate operation
-    if (!body.operation) {
-      return errorResponse('operation is required', 400);
-    }
-
-    if (!isListOperation(body.operation)) {
-      return errorResponse(
-        `Invalid operation. Must be one of: ${LIST_OPERATIONS.join(', ')}`,
-        400
-      );
-    }
-
-    // Validate required parameters for the operation
-    const requiredParams = REQUIRED_PARAMS[body.operation];
-    for (const param of requiredParams) {
-      if (!body[param]) {
-        return errorResponse(`${param} is required for ${body.operation}`, 400);
-      }
-    }
-
-    // Ensure 'force' property is present
-    body.force = body.force ?? false;
-
-    // Ensure 'operation' property is present
-    const requestBody = {
-      ...body,
-      force: body.force,
-    };
+    const body = await req.json();
 
     // Execute token registry operation
-    const result = await tokenRegistryTool.execute!(requestBody, {});
+    const result = await tokenRegistryTool.execute!(body, {});
 
     // Return response with appropriate status
     return NextResponse.json(result, {
