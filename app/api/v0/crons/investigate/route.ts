@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
         'Stacks-API-Transaction': transactionTool,
         'SIP010-Token': sip10Tool,
       },
-      maxTokens: 2000,
+      maxTokens: 1000,
     });
 
     let discoveryResult = '';
