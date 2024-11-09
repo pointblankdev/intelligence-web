@@ -26,13 +26,7 @@ import { generateUUID, sanitizeResponseMessages } from '@/lib/utils';
 
 export const maxDuration = 60;
 
-type AllowedTools =
-  | 'createDocument'
-  | 'updateDocument'
-  | 'requestSuggestions'
-  | 'getWeather';
-
-const canvasTools: AllowedTools[] = [
+const canvasTools: string[] = [
   'createDocument',
   'updateDocument',
   'requestSuggestions',
@@ -69,12 +63,9 @@ export async function POST(request: Request) {
     model: customModel(model.apiIdentifier),
     system: modelId === 'gpt-4o-canvas' ? canvasPrompt : regularPrompt,
     messages: coreMessages,
-    maxSteps: 5,
-    experimental_activeTools: activeTools as (
-      | 'createDocument'
-      | 'updateDocument'
-      | 'requestSuggestions'
-    )[],
+    maxSteps: 10,
+    experimental_activeTools: activeTools as any[],
+    // toolChoice: { type: 'tool', toolName: 'Token-Registry' as any }, // force the model to call a tool
     tools: {
       ...toolRegistry.getAllTools(),
       createDocument: {

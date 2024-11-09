@@ -17,6 +17,7 @@ import { PricesResult } from './prices';
 import { ContractResult } from './stacks-contract';
 import { SearchResult } from './stacks-search';
 import { MetadataResult } from './token-metadata';
+import { TokenRegistryResult } from './token-registry';
 import { TransactionDisplay } from './transaction-info';
 import { WalletInfo } from './wallet-info';
 
@@ -153,6 +154,11 @@ export const Message = ({
                     <div key={toolCallId}>
                       {toolName === 'DEX-Analysis' ? (
                         <DexInfo response={result} />
+                      ) : toolName === 'Token-Registry' ? (
+                        <TokenRegistryResult
+                          response={result}
+                          operation={args.operation}
+                        />
                       ) : toolName === 'Token-Prices' ? (
                         <PricesResult response={result} />
                       ) : toolName === 'Stacks-Token-Metadata' ? (
@@ -207,6 +213,8 @@ export const Message = ({
                     >
                       {toolName === 'DEX-Analysis' ? (
                         <DexInfo />
+                      ) : toolName === 'Token-Registry' ? (
+                        <TokenRegistryResult />
                       ) : toolName === 'Stacks-API-Search' ? (
                         <SearchResult />
                       ) : toolName === 'Stacks-Token-Metadata' ? (

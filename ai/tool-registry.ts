@@ -3,6 +3,7 @@ import { CoreTool } from 'ai';
 import { contractAuditTool } from '@/tools/code-audit/smart-contract';
 import { pricesTool } from '@/tools/defi/prices';
 import { sip10Tool } from '@/tools/sips/sip10';
+import { tokenRegistryTool } from '@/tools/sips/token-registry';
 import { bnsTool } from '@/tools/stacks-api/bns';
 import { contractTool } from '@/tools/stacks-api/contract';
 import { searchTool } from '@/tools/stacks-api/search';
@@ -16,6 +17,7 @@ export class ToolRegistry {
   private tools: Map<string, CoreTool> = new Map();
 
   constructor() {
+    this.tools.set('Token-Registry', tokenRegistryTool);
     this.tools.set('DEX-Analysis', dexTool);
     this.tools.set('SIP010-Token', sip10Tool);
     this.tools.set('Token-Prices', pricesTool);
