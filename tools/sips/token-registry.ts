@@ -101,6 +101,7 @@ Operations:
 
 Usage Notes:
 - Use getTokenInfo to check existence before operations
+- Get metadata by using the SIP10 tool with getTokenUriAndMetadata
 - Metadata updates are additive (patch)
 - Force flag overrides existing symbol mappings
 - Contract addresses must be valid chain format
