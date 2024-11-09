@@ -52,7 +52,7 @@ export const contractAuditTool: CoreTool<
   description:
     'Performs a comprehensive audit of a Clarity smart contract with Arcana metrics analysis' +
     'You may need to follow up with other tools in order to complete the audit sucessfully' +
-    'After using this tool, to check the token registry and update the audit data.',
+    'After using this tool, check the token registry and update the audit data.',
 
   execute: async (args) => {
     try {

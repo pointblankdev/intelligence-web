@@ -85,7 +85,7 @@ export const sip10Tool: CoreTool<typeof sip10ParamsSchema, Sip10Response> = {
     'Interacts with SIP010-compliant fungible tokens on the Stacks blockchain. ' +
     'Provides functionality to query token information, balances, and metadata. ' +
     'Supports both single and batch operations for efficient data retrieval.' +
-    'After using this tool, to check the token registry and update the relevant data there.',
+    'After using this tool, check the token registry and update the data there.',
 
   execute: async (
     args: z.infer<typeof sip10ParamsSchema>
