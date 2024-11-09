@@ -13,6 +13,11 @@ const tokenRegistryParamsSchema = z.object({
       'registerLpToken',
       'addPoolForToken',
 
+      // Removal
+      'removeContract',
+      'unregisterLpToken',
+      'removePoolForToken',
+
       // Queries
       'getTokenInfo',
       'resolveSymbol',
@@ -85,12 +90,17 @@ Operations:
    registerLpToken(contractId, lpInfo) - Register LP token with pool data
    addPoolForToken(contractId, poolId) - Add pool relationship for token
 
-2. Queries:
+2. Removal:
+   removeContract(contractId) - Remove token from registry
+   unregisterLpToken(contractId) - Remove LP token registration
+   removePoolForToken(contractId, poolId) - Remove pool relationship
+
+3. Queries:
    getTokenInfo(contractId) - Get enriched token data
    resolveSymbol(symbol) - Get contract for symbol
    getLpTokens(contractId) - Get LP tokens for contract
 
-3. List Operations:
+4. List Operations:
    listAll() - Get all enriched tokens
    listSymbols() - Get all symbol mappings
    listMetadata() - Get all token metadata
@@ -99,7 +109,7 @@ Operations:
    listPools() - Get all pool relationships
    listPrices() - Get all token prices
 
-4. Updates:
+5. Updates:
    updateMetadata(contractId, metadata) - Update token metadata
    updateAudit(contractId, audit) - Update contract audit
    updatePrice(symbol, price) - Update token price
@@ -141,6 +151,64 @@ AI Guidelines:
             data: {
               contractId: args.contractId,
               registered: true,
+            },
+          };
+        }
+
+        case 'removeContract': {
+          if (!args.contractId) {
+            return {
+              success: false,
+              error: 'Contract ID required',
+            };
+          }
+
+          await tokenRegistry.removeContract(args.contractId);
+
+          return {
+            success: true,
+            data: {
+              contractId: args.contractId,
+              removed: true,
+            },
+          };
+        }
+
+        case 'unregisterLpToken': {
+          if (!args.contractId || !args.lpInfo) {
+            return {
+              success: false,
+              error: 'Contract ID and LP info required',
+            };
+          }
+
+          await tokenRegistry.unregisterLpToken(args.contractId, args.lpInfo);
+
+          return {
+            success: true,
+            data: {
+              contractId: args.contractId,
+              unregistered: true,
+            },
+          };
+        }
+
+        case 'removePoolForToken': {
+          if (!args.contractId || !args.poolId) {
+            return {
+              success: false,
+              error: 'Contract ID and pool ID required',
+            };
+          }
+
+          await tokenRegistry.removePoolForToken(args.contractId, args.poolId);
+
+          return {
+            success: true,
+            data: {
+              contractId: args.contractId,
+              poolId: args.poolId,
+              removed: true,
             },
           };
         }

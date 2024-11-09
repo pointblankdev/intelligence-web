@@ -318,11 +318,11 @@ export class TokenRegistryService {
     const now = Date.now();
 
     for (const contractId of contracts) {
-      const lastSeen = await this.getLastSeen(contractId);
-
       console.log(`Validating contract existance: ${contractId}`);
       const search = new StacksSearchService();
-      const result = await search.searchContract(contractId, true);
+      const result = await search.searchContract(contractId);
+
+      const lastSeen = await this.getLastSeen(contractId);
       if (!result.found)
         if (lastSeen && now - lastSeen > maxAge) {
           console.log(`Could clean up stale contract: ${contractId}`);
