@@ -12,8 +12,13 @@ const errorResponse = (message: string, status: number = 400) => {
   return NextResponse.json({ success: false, error: message }, { status });
 };
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest, res: NextResponse) {
   try {
+    if (
+      req.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`
+    ) {
+      return res.json();
+    }
     // Stream the discovery process using Claude
     const { fullStream } = await streamText({
       model: customModel('claude-3-5-sonnet-20241022'),
