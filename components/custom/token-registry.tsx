@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+
 import EnrichedTokenDisplay from './enriched-token';
 
 // Helper components
@@ -480,7 +481,7 @@ export function TokenRegistryResult({
               <Terminal className="size-5 mt-1" />
               <div className="space-y-2">
                 <div className="text-gray-900 dark:text-gray-100">
-                  Operation Result:
+                  {operation} Operation Result:
                 </div>
                 <pre className="p-2 rounded text-xs font-mono overflow-x-auto text-wrap">
                   {JSON.stringify(response.data, null, 2)}
