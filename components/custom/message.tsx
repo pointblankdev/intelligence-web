@@ -20,6 +20,7 @@ import { MetadataResult } from './token-metadata';
 import { TokenRegistryResult } from './token-registry';
 import { TransactionDisplay } from './transaction-info';
 import { WalletInfo } from './wallet-info';
+import Sip10Display from './sip10';
 
 interface CodeBlockInfo {
   language: string;
@@ -159,6 +160,11 @@ export const Message = ({
                           response={result}
                           operation={args.operation}
                         />
+                      ) : toolName === 'SIP010-Token' ? (
+                        <Sip10Display
+                          response={result}
+                          operation={args.operation}
+                        />
                       ) : toolName === 'Token-Prices' ? (
                         <PricesResult response={result} />
                       ) : toolName === 'Stacks-Token-Metadata' ? (
@@ -198,6 +204,7 @@ export const Message = ({
                         />
                       ) : (
                         <pre className="text-xs">
+                          <>{console.log(toolName, args.operation)}</>
                           {JSON.stringify(result, null, 2)}
                         </pre>
                       )}
@@ -215,6 +222,8 @@ export const Message = ({
                         <DexInfo />
                       ) : toolName === 'Token-Registry' ? (
                         <TokenRegistryResult />
+                      ) : toolName === 'SIP010-Token' ? (
+                        <Sip10Display />
                       ) : toolName === 'Stacks-API-Search' ? (
                         <SearchResult />
                       ) : toolName === 'Stacks-Token-Metadata' ? (

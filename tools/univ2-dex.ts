@@ -309,40 +309,51 @@ export const name = 'DEX-Analysis';
 export const dexTool: CoreTool<typeof dexParamsSchema, DexToolResponse> = {
   parameters: dexParamsSchema,
   description: `
-    Comprehensive DEX analysis tool for querying pools, analyzing trades,
-    and managing liquidity positions. Pool IDs start from 1 and increase.
+    Analysis tool for Uniswap V2-style DEX operations. All numeric values must be passed as strings to handle BigInt values.
 
-    Key Functions:
-    1. Pool Information
-       - Get total number of pools
-       - Query specific pools by ID or token addresses
-       - Batch fetch multiple pools
+    Parameter Requirements:
+    1. Pool IDs are strings starting from "1" 
+    2. Token addresses must be fully qualified: "SP2...<contract_address>.<token_name>"
+    3. All numeric amounts must be strings: "1000000" not 1000000
+    4. Token pairs must be in canonical order (token0 < token1)
 
-    2. Trading Analysis
-       - Get swap quotes for direct trades
-       - Calculate multi-hop trades
-       - Analyze price impacts
-       - Batch quote multiple trades
+    Operation Groups and Required Parameters:
 
-    3. Liquidity Management
-       - Calculate optimal liquidity provision
-       - Estimate liquidity token minting
-       - Get removal quotes
-       - Analyze pool share impacts
+    Pool Information:
+    - getNumberOfPools: No parameters required
+    - getPoolById: pools.poolId required
+    - getPool: pools.token0 and pools.token1 required
+    - getPools: pools.ids array required
 
-    Common Use Cases:
-    1. Pool Discovery:
-       getNumberOfPools -> getPools
-       
-    2. Trading:
-       getPool -> getSwapQuote -> getMultiHopQuote
-       
-    3. Liquidity Provision:
-       getLiquidityQuote -> calculateLiquidityTokens
-       
-    4. Position Management:
-       getRemoveLiquidityQuote -> getRemoveLiquidityRangeQuotes
-  `,
+    Trading:
+    - getSwapQuote: swap.tokenIn, swap.tokenOut, swap.amount required
+    - getSwapQuoteForExactOutput: same as getSwapQuote
+    - getMultiHopQuote: swap.path array and swap.amount required
+    - getMultiHopQuoteForExactOutput: same as getMultiHopQuote
+    - batchGetQuotes: swap.paths array and swap.amount required
+
+    Liquidity:
+    - getLiquidityQuote: liquidity.poolId, liquidity.amount0, liquidity.amount1 required
+    - calculateLiquidityTokens: same as getLiquidityQuote
+    - batchGetLiquidityQuotes: liquidity.queries array required, each with poolId and amounts
+
+    Removal:
+    - getRemoveLiquidityQuote: removal.poolId and removal.liquidityTokens required
+    - getRemoveLiquidityRangeQuotes: same as getRemoveLiquidityQuote
+    - batchGetRemoveLiquidityQuotes: removal.queries array required, each with poolId and liquidityTokens
+
+    Response Handling:
+    1. Check response.success before accessing response.data
+    2. All numeric values in responses are returned as strings
+    3. Errors are provided in response.error when success is false
+    4. Batch operations return arrays in corresponding response.data fields
+
+    Error Prevention:
+    1. Verify all amount strings are valid numbers
+    2. Ensure token addresses match required format
+    3. Confirm pool IDs exist before querying
+    4. Validate path arrays contain connected pools
+    5. Include minimum amounts for slippage protection in liquidity operations`,
 
   execute: async (
     args: z.infer<typeof dexParamsSchema>,

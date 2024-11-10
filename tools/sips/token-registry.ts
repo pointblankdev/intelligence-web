@@ -80,53 +80,80 @@ export const tokenRegistryTool: CoreTool<
   RegistryResponse
 > = {
   parameters: tokenRegistryParamsSchema,
-  description: `Token registry for maintaining a knowledge graph of token information, relationships, and metadata.
+  description: `Token registry for tracking relationships between contracts, LP tokens, pools, and metadata.
 
-Operations:
+Required Data Formats:
+- contractId format: "SP2...<contract_address>.<token_name>"
+- symbol: case-sensitive string identifier
+- poolId: string identifier from DEX
+- lpInfo: { dex: "charisma", poolId: string, token0: contractId, token1: contractId }
 
-1. Discovery:
-   registerToken(contractId, metadata?) - Add new token with optional metadata
-   registerSymbol(contractId, symbol, force?) - Map symbol to contract
-   registerLpToken(contractId, lpInfo) - Register LP token with pool data
-   addPoolForToken(contractId, poolId) - Add pool relationship for token
+Entity Relationships:
+1. Base Tokens
+   - Must be registered first: registerToken(contractId)
+   - Can have one symbol mapping: registerSymbol(contractId, symbol)
+   - Can participate in multiple pools: addPoolForToken(contractId, poolId)
+   - Store metadata from SIP10 tool
 
-2. Removal:
-   removeContract(contractId) - Remove token from registry
-   unregisterLpToken(contractId) - Remove LP token registration
-   removePoolForToken(contractId, poolId) - Remove pool relationship
+2. LP Tokens
+   - Must register base token first: registerToken(lpContractId)
+   - Then register LP data: registerLpToken(lpContractId, lpInfo)
+   - LP info must include both token contracts and pool
+   - token0 and token1 must be registered first
+   - Always register pool relationships for both tokens
 
-3. Queries:
-   getTokenInfo(contractId) - Get enriched token data
-   resolveSymbol(symbol) - Get contract for symbol
-   getLpTokens(contractId) - Get LP tokens for contract
+3. Pool Relationships
+   - Add pool to both tokens when creating LP token
+   - Pool must exist in DEX before registration
+   - Both tokens must be registered first
+   - Token order matters (token0 < token1)
 
-4. List Operations:
-   listAll() - Get all enriched tokens
-   listSymbols() - Get all symbol mappings
-   listMetadata() - Get all token metadata
-   listLpTokens() - Get all LP tokens and pools
-   listAudits() - Get all contract audits
-   listPools() - Get all pool relationships
-   listPrices() - Get all token prices
+Operation Order for New LP Token:
+1. Register both underlying tokens if not exists
+2. Register LP token contract
+3. Create LP token info with both underlying tokens
+4. Add pool relationships to both tokens
+5. Update metadata if available
 
-5. Updates:
-   updateMetadata(contractId, metadata) - Update token metadata
-   updateAudit(contractId, audit) - Update contract audit
-   updatePrice(symbol, price) - Update token price
+Operation Order for New Pool:
+1. Verify both tokens exist
+2. Add pool to both token records
+3. Register LP token if exists
+4. Update price data if available
 
-Usage Notes:
-- Use getTokenInfo to check existence before operations
-- Get metadata by using the SIP10 tool with getTokenUriAndMetadata
-- Metadata updates are additive (patch)
-- Force flag overrides existing symbol mappings
-- Contract addresses must be valid chain format
-- Symbol operations are case-sensitive
+Common Patterns:
+1. Token Discovery:
+   getTokenInfo -> registerToken -> registerSymbol -> updateMetadata
 
-AI Guidelines:
-- Check registry before adding new tokens
-- Update incomplete/outdated information
-- Ask user to clarify conflicting data
-- Prioritize basic metadata, relationships, audits`,
+2. LP Token Creation:
+   registerToken (token0) ->
+   registerToken (token1) ->
+   registerToken (lpToken) ->
+   registerLpToken ->
+   addPoolForToken (token0) ->
+   addPoolForToken (token1)
+
+3. Pool Addition:
+   getTokenInfo (token0) ->
+   getTokenInfo (token1) ->
+   addPoolForToken (token0) ->
+   addPoolForToken (token1) ->
+   registerLpToken (if exists)
+
+4. Data Updates:
+   getTokenInfo ->
+   updateMetadata ->
+   updatePrice (if symbol exists)
+
+Validation Rules:
+1. Always verify token existence before operations
+2. Ensure both tokens exist before LP registration
+3. Pool relationships must be bidirectional
+4. Symbols must be registered for price updates
+5. LP tokens must reference valid pool and tokens
+6. Contract IDs must match chain format
+7. Force flag required for symbol reassignment
+8. Pool IDs must be valid DEX references`,
 
   execute: async (args) => {
     try {
