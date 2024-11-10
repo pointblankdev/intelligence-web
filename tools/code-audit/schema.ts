@@ -4,7 +4,9 @@ const fungibleTokenSchema = z.object({
   name: z.string().describe('Token name'),
   symbol: z.string().describe('Token symbol'),
   decimals: z.number().min(0).max(18).describe('Number of decimal places'),
-  tokenIdentifier: z.string().describe('Token identifier string'),
+  tokenIdentifier: z
+    .string()
+    .describe('Token identifier string. This property is required'),
   isTransferable: z.boolean().describe('Whether token can be transferred'),
   isMintable: z.boolean().describe('Whether new tokens can be minted'),
   isBurnable: z.boolean().describe('Whether tokens can be burned'),

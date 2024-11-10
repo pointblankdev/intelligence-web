@@ -81,12 +81,11 @@ export const contractAuditTool: CoreTool<
           {
             role: 'user',
             content: `Analyze this Clarity smart contract and provide a comprehensive audit in strict JSON format.
-            Pay special attention to:
+            For all audit your must include:
             1. Fungible tokens and their tokenIdentifiers (ft-token definition name)
             2. Data variables and maps defined in the contract
             3. Function definitions and their parameters
-            4. Values that would need to be stored in Arcana
-            5. Alignment classification with detailed reasoning
+            4. Contract classification with detailed reasoning
 
             Contract source:
             ${contract.source_code}
@@ -97,7 +96,7 @@ export const contractAuditTool: CoreTool<
                 "name": string,
                 "symbol": string,
                 "decimals": number,
-                "tokenIdentifier": string,
+                "tokenIdentifier": string (required)
                 "isTransferable": boolean,
                 "isMintable": boolean,
                 "isBurnable": boolean,
