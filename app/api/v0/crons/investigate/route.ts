@@ -29,9 +29,9 @@ export async function GET(req: NextRequest) {
       messages: [
         {
           role: 'user',
-          content: `Lookup the last 20 transactions to find new contracts to add to the registry.
+          content: `Lookup the last 50 transactions to find new contracts to add to the registry.
           Do not add contracts that are already in the registry.
-          Please complete this within 10 seconds.
+          Use refreshMetadata after adding new token contracts.
           `,
         },
       ],
