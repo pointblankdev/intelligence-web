@@ -11,16 +11,17 @@ import { ContractAuditResult } from './contract-audit';
 import { DexInfo } from './dex-analysis';
 import { ArbitrageInfo } from './dex-graph';
 import { DocumentToolCall, DocumentToolResult } from './document';
+import LpRegistrationResult from './lp-registration';
 import { Markdown } from './markdown';
 import { PreviewAttachment } from './preview-attachment';
 import { PricesResult } from './prices';
+import Sip10Display from './sip10';
 import { ContractResult } from './stacks-contract';
 import { SearchResult } from './stacks-search';
 import { MetadataResult } from './token-metadata';
 import { TokenRegistryResult } from './token-registry';
 import { TransactionDisplay } from './transaction-info';
 import { WalletInfo } from './wallet-info';
-import Sip10Display from './sip10';
 
 interface CodeBlockInfo {
   language: string;
@@ -155,6 +156,9 @@ export const Message = ({
                     <div key={toolCallId}>
                       {toolName === 'DEX-Analysis' ? (
                         <DexInfo response={result} />
+                      ) : toolName === 'Token-Registry' &&
+                        args.operation === 'registerCompleteLP' ? (
+                        <LpRegistrationResult response={result} />
                       ) : toolName === 'Token-Registry' ? (
                         <TokenRegistryResult
                           response={result}
@@ -220,6 +224,9 @@ export const Message = ({
                     >
                       {toolName === 'DEX-Analysis' ? (
                         <DexInfo />
+                      ) : toolName === 'Token-Registry' &&
+                        args.operation === 'registerCompleteLP' ? (
+                        <LpRegistrationResult />
                       ) : toolName === 'Token-Registry' ? (
                         <TokenRegistryResult />
                       ) : toolName === 'SIP010-Token' ? (

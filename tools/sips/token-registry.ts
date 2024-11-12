@@ -1,73 +1,98 @@
 import { CoreTool } from 'ai';
 import { z } from 'zod';
 
+import { Sip10Service } from '@/services/sips/sip10';
 import { tokenRegistry } from '@/services/sips/token-registry';
 import { ContractAudit } from '@/tools/code-audit/schema';
 
-const tokenRegistryParamsSchema = z.object({
-  operation: z
-    .enum([
-      // Discovery
-      'registerToken',
-      'registerSymbol',
-      'registerLpToken',
-      'addPoolForToken',
+// Create service instance
+const sip10Service = new Sip10Service();
 
-      // Removal
-      'removeContract',
-      'unregisterLpToken',
-      'removePoolForToken',
+const tokenRegistryParamsSchema = z
+  .object({
+    operation: z
+      .enum([
+        // Discovery
+        'registerToken',
+        'registerSymbol',
+        'registerLpToken',
+        'addPoolForToken',
 
-      // Queries
-      'getTokenInfo',
-      'resolveSymbol',
-      'getLpTokens',
+        // Removal
+        'removeContract',
+        'unregisterLpToken',
+        'removePoolForToken',
 
-      // List Operations
-      'listAll',
-      'listSymbols',
-      'listMetadata',
-      'listLpTokens',
-      'listAudits',
-      'listPools',
-      'listPrices',
+        // Queries
+        'getTokenInfo',
+        'resolveSymbol',
+        'getLpTokens',
 
-      // Updates
-      'updateMetadata',
-      'updateAudit',
-      'updatePrice',
+        // List Operations
+        'listAll',
+        'listSymbols',
+        'listMetadata',
+        'listLpTokens',
+        'listAudits',
+        'listPools',
+        'listPrices',
 
-      // Maintenance
-      'cleanup',
-    ])
-    .describe('Registry operation to perform'),
+        // Updates
+        'updateMetadata',
+        'updateAudit',
+        'updatePrice',
 
-  // Token identification
-  contractId: z.string().optional().describe('Contract principal'),
-  symbol: z.string().optional().describe('Token symbol'),
+        // Maintenance
+        'cleanup',
 
-  // Pool data
-  poolId: z.string().optional().describe('Pool identifier'),
+        // Batch Operations
+        'registerCompleteLP',
+      ])
+      .describe('Registry operation to perform'),
 
-  // Operation data
-  metadata: z.record(z.any()).optional().describe('Token metadata'),
-  audit: z.any().optional().describe('Contract audit results'),
-  price: z.number().optional().describe('Token price'),
+    // Token identification
+    contractId: z.string().optional().describe('Contract principal'),
+    symbol: z.string().optional().describe('Token symbol'),
 
-  // LP token info
-  lpInfo: z
-    .object({
-      dex: z.string(),
-      poolId: z.string(),
-      token0: z.string(),
-      token1: z.string(),
-    })
-    .optional()
-    .describe('LP token information'),
+    // Pool data
+    poolId: z.string().optional().describe('Pool identifier'),
 
-  // Force operations
-  force: z.boolean().optional().default(false),
-});
+    // Operation data
+    metadata: z.record(z.any()).optional().describe('Token metadata'),
+    audit: z.any().optional().describe('Contract audit results'),
+    price: z.number().optional().describe('Token price'),
+
+    // LP token info
+    lpInfo: z
+      .object({
+        dex: z.string(),
+        poolId: z.string(),
+        token0: z.string(),
+        token1: z.string(),
+      })
+      .optional()
+      .describe('LP token information'),
+
+    lpRegistration: z
+      .object({
+        lpContract: z.string().describe('LP token contract ID'),
+        token0: z.object({
+          contract: z.string().describe('First token contract ID'),
+          symbol: z.string().describe('First token symbol'),
+        }),
+        token1: z.object({
+          contract: z.string().describe('Second token contract ID'),
+          symbol: z.string().describe('Second token symbol'),
+        }),
+        dex: z.enum(['CHARISMA', 'VELAR']).describe('DEX provider'),
+        poolId: z.string().describe('Pool ID from the DEX'),
+      })
+      .optional(),
+
+    // Force operations
+    force: z.boolean().optional().default(false),
+  })
+  .describe('Token registry parameters');
 
 export type RegistryResponse = {
   success: boolean;
@@ -80,7 +105,7 @@ export const tokenRegistryTool: CoreTool<
   RegistryResponse
 > = {
   parameters: tokenRegistryParamsSchema,
-  description: `Token registry for tracking relationships between contracts, LP tokens, pools, and metadata.
+  description: `Token registry for tracking relationships between contracts, LP tokens, pools, and metadata, and looking up tokens by symbol.
 
 Required Data Formats:
 - contractId format: "SP2...<contract_address>.<token_name>"
@@ -158,6 +183,114 @@ Validation Rules:
   execute: async (args) => {
     try {
       switch (args.operation) {
+        case 'registerCompleteLP': {
+          if (!args.lpRegistration) {
+            return {
+              success: false,
+              error: 'LP registration data required',
+            };
+          }
+
+          const { lpContract, token0, token1, dex, poolId } =
+            args.lpRegistration;
+
+          // Track all registration results
+          const results = {
+            contracts: {} as Record<string, boolean>,
+            symbols: {} as Record<string, boolean>,
+            pool: {} as Record<string, boolean>,
+            lpToken: false,
+            metadata: {} as Record<string, boolean>,
+          };
+
+          // 1. Fetch metadata for all tokens
+          const [token0Metadata, token1Metadata, lpMetadata] =
+            await Promise.all([
+              sip10Service.getTokenUriAndMetadata(
+                token0.contract.split('.')[0],
+                token0.contract.split('.')[1]
+              ),
+              sip10Service.getTokenUriAndMetadata(
+                token1.contract.split('.')[0],
+                token1.contract.split('.')[1]
+              ),
+              sip10Service.getTokenUriAndMetadata(
+                lpContract.split('.')[0],
+                lpContract.split('.')[1]
+              ),
+            ]);
+
+          // 2. Register all three contracts and their metadata
+          for (const { contract, metadata } of [
+            { contract: lpContract, metadata: lpMetadata },
+            { contract: token0.contract, metadata: token0Metadata },
+            { contract: token1.contract, metadata: token1Metadata },
+          ]) {
+            await tokenRegistry.addContract(contract);
+            await tokenRegistry.setMetadata(contract, metadata);
+            results.contracts[contract] = true;
+            results.metadata[contract] = true;
+          }
+
+          // 3. Register both base token symbols
+          const symbolResults = await Promise.all([
+            tokenRegistry.registerSymbol(token0.symbol, token0.contract, false),
+            tokenRegistry.registerSymbol(token1.symbol, token1.contract, false),
+          ]);
+          results.symbols[token0.symbol] = symbolResults[0];
+          results.symbols[token1.symbol] = symbolResults[1];
+
+          // 4. Create LP token info
+          const lpInfo = {
+            dex,
+            poolId,
+            token0: token0.contract,
+            token1: token1.contract,
+          };
+
+          // 5. Register LP token with pool info
+          await tokenRegistry.registerLpToken(lpContract, lpInfo);
+          results.lpToken = true;
+
+          // 6. Add pool relationships for both base tokens
+          for (const contract of [token0.contract, token1.contract]) {
+            await tokenRegistry.addPoolForToken(contract, poolId);
+            results.pool[contract] = true;
+          }
+
+          // 7. Get complete token info for all registered entities
+          const [lpTokenInfo, token0Info, token1Info] = await Promise.all([
+            tokenRegistry.getEnrichedToken(lpContract),
+            tokenRegistry.getEnrichedToken(token0.contract),
+            tokenRegistry.getEnrichedToken(token1.contract),
+          ]);
+
+          return {
+            success: true,
+            data: {
+              registrationResults: results,
+              lpToken: {
+                info: lpTokenInfo,
+                metadata: lpMetadata,
+              },
+              baseTokens: {
+                token0: {
+                  info: token0Info,
+                  metadata: token0Metadata,
+                },
+                token1: {
+                  info: token1Info,
+                  metadata: token1Metadata,
+                },
+              },
+              pool: {
+                dex,
+                id: poolId,
+              },
+            },
+          };
+        }
+
         case 'registerToken': {
           if (!args.contractId) {
             return {

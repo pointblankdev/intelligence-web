@@ -6,6 +6,7 @@ export async function POST(req: NextRequest) {
   try {
     // Parse request body
     const body = await req.json();
+    body.dex = 'VELAR';
 
     // Execute using the existing tool
     const result = await dexTool.execute!(body, {});

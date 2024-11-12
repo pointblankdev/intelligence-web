@@ -1,6 +1,6 @@
 import { describe, it } from 'vitest';
 
-import { DexReadService } from './univ2-dex';
+import { DexProvider, MultiDexReadService } from './univ2-dex';
 
 // Contract addresses and names for testing
 const DEX_CORE_ADDRESS = 'SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS';
@@ -24,12 +24,7 @@ const TEST_AMOUNTS = {
 } as const;
 
 describe('DexReadService', () => {
-  const service = new DexReadService(
-    DEX_CORE_ADDRESS,
-    DEX_CORE_CONTRACT,
-    DEX_ROUTER_ADDRESS,
-    DEX_ROUTER_CONTRACT
-  );
+  const service = new MultiDexReadService(DexProvider.CHARISMA);
 
   describe('Pool Information Methods', () => {
     it('should get total number of pools', async () => {

@@ -22,25 +22,59 @@ import {
 
 import { cache } from '../cache';
 
-/**
- * Pool information returned from the DEX
- */
+export enum DexProvider {
+  CHARISMA = 'CHARISMA',
+  VELAR = 'VELAR',
+}
+
+export interface DexConfig {
+  address: string;
+  coreContract: string;
+  routerContract: string;
+  path2Contract: string;
+  libraryContract: string;
+}
+
+const DEX_CONFIGS: Record<DexProvider, DexConfig> = {
+  [DexProvider.CHARISMA]: {
+    address: 'SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS',
+    coreContract: 'univ2-core',
+    routerContract: 'univ2-router',
+    path2Contract: 'univ2-path2',
+    libraryContract: 'univ2-library',
+  },
+  [DexProvider.VELAR]: {
+    address: 'SP1Y5YSTAHZ88XYK1VPDH24GY0HPX5J4JECTMY4A1',
+    coreContract: 'univ2-core',
+    routerContract: 'univ2-router',
+    path2Contract: 'univ2-path2',
+    libraryContract: 'univ2-library',
+  },
+};
+
+// Existing interfaces remain the same
 export interface PoolInfo {
   id: string;
   token0: string;
   token1: string;
   reserve0: bigint;
   reserve1: bigint;
+  lpToken: string;
   totalSupply: bigint;
   swapFee: {
     numerator: number;
     denominator: number;
   };
+  protocolFee: {
+    numerator: number;
+    denominator: number;
+  };
+  shareFee: {
+    numerator: number;
+    denominator: number;
+  };
 }
 
-/**
- * Swap quote information including price impact
- */
 export interface SwapQuote {
   amountIn: bigint;
   amountOut: bigint;
@@ -48,29 +82,20 @@ export interface SwapQuote {
   route: string[];
 }
 
-/**
- * Quote information for adding liquidity
- */
 export interface LiquidityQuote {
   token0Amount: bigint;
   token1Amount: bigint;
   liquidityTokens: bigint;
-  shareOfPool: number; // Percentage of pool ownership after minting
-  priceImpact: number; // How much this affects the pool price
+  shareOfPool: number;
+  priceImpact: number;
 }
 
-/**
- * Quote information for removing liquidity
- */
 export interface RemoveLiquidityQuote {
   token0Amount: bigint;
   token1Amount: bigint;
-  shareOfPool: number; // Percentage of pool being removed
+  shareOfPool: number;
 }
 
-/**
- * Error codes for DEX operations
- */
 export enum DexReadErrorCode {
   POOL_NOT_FOUND = 'POOL_NOT_FOUND',
   INSUFFICIENT_LIQUIDITY = 'INSUFFICIENT_LIQUIDITY',
@@ -81,11 +106,9 @@ export enum DexReadErrorCode {
   MINIMUM_NOT_MET = 'MINIMUM_NOT_MET',
   PRICE_IMPACT_HIGH = 'PRICE_IMPACT_HIGH',
   ZERO_LIQUIDITY = 'ZERO_LIQUIDITY',
+  INVALID_DEX = 'INVALID_DEX',
 }
 
-/**
- * Custom error class for DEX operations
- */
 export class DexReadError extends Error {
   constructor(
     message: string,
@@ -100,19 +123,20 @@ export class DexReadError extends Error {
 /**
  * Service class for reading DEX contract states and calculating trade amounts
  */
-export class DexReadService {
+export class MultiDexReadService {
   private client;
+  private config: DexConfig;
 
-  constructor(
-    private readonly contractAddress: string = 'SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS',
-    private readonly contractName: string = 'univ2-core',
-    private readonly routerAddress: string = 'SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS',
-    private readonly routerName: string = 'univ2-path2',
-    private readonly path2Address: string = 'SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS',
-    private readonly path2Name: string = 'univ2-path2',
-    private readonly libraryAddress: string = 'SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS',
-    private readonly libraryName: string = 'univ2-library'
-  ) {
+  constructor(private readonly provider: DexProvider = DexProvider.CHARISMA) {
+    this.config = DEX_CONFIGS[provider];
+    if (!this.config) {
+      throw new DexReadError(
+        'Invalid DEX provider',
+        DexReadErrorCode.INVALID_DEX,
+        { provider }
+      );
+    }
+
     this.client = createClient({
       baseUrl: 'https://api.mainnet.hiro.so',
     });
@@ -134,20 +158,20 @@ export class DexReadService {
   private async callReadOnly(
     method: string,
     args: ClarityValue[] = [],
-    contractAddress: string = this.contractAddress,
-    contractName: string = this.contractName
+    contractName: string,
+    contractAddress = this.config.address
   ): Promise<any> {
     try {
       const path = `/v2/contracts/call-read/${contractAddress}/${contractName}/${method}`;
       const hexArgs = args.map((arg) => cvToHex(arg));
 
-      const key = `${path}:${hexArgs.join(':')}`;
+      const key = `${this.provider}:${path}:${hexArgs.join(':')}`;
       const cachedResponse = await cache.get(key);
       if (cachedResponse) return cvToValue(hexToCV(cachedResponse as string));
 
       const response = await this.client.POST(path as any, {
         body: {
-          sender: contractAddress,
+          sender: this.config.address,
           arguments: hexArgs,
         },
       });
@@ -184,31 +208,17 @@ export class DexReadService {
       const result = await this.callReadOnly(
         'get-nr-pools',
         [],
-        this.contractAddress,
-        this.contractName
+        this.config.coreContract
       );
       return Number(result);
     } catch (error) {
       if (error instanceof DexReadError) throw error;
-
       throw new DexReadError(
         'Failed to get number of pools',
         DexReadErrorCode.CONTRACT_ERROR,
         error
       );
     }
-  }
-
-  /**
-   * Gets the pool details from the core contract
-   */
-  private async getPoolDetails(poolId: string | number): Promise<any> {
-    return await this.callReadOnly(
-      'get-pool',
-      [uintCV(Number(poolId))],
-      this.contractAddress,
-      this.contractName
-    );
   }
 
   /**
@@ -219,8 +229,11 @@ export class DexReadService {
    */
   async getPoolById(id: string | number): Promise<PoolInfo> {
     try {
-      // Call get-pool directly with the ID
-      const result = await this.getPoolDetails(id);
+      const result = await this.callReadOnly(
+        'get-pool',
+        [uintCV(Number(id))],
+        this.config.coreContract
+      );
 
       if (!result || !result.value) {
         throw new DexReadError(
@@ -231,22 +244,29 @@ export class DexReadService {
       }
 
       const pool = result.value;
-
       return {
         id: id.toString(),
         token0: pool.token0.value,
         token1: pool.token1.value,
         reserve0: BigInt(pool.reserve0.value),
         reserve1: BigInt(pool.reserve1.value),
+        lpToken: pool['lp-token'].value,
         totalSupply: await this.getPoolTotalSupply(pool['lp-token'].value),
         swapFee: {
           numerator: Number(pool['swap-fee'].value.num.value),
           denominator: Number(pool['swap-fee'].value.den.value),
         },
+        protocolFee: {
+          numerator: Number(pool['protocol-fee'].value.num.value),
+          denominator: Number(pool['protocol-fee'].value.den.value),
+        },
+        shareFee: {
+          numerator: Number(pool['share-fee'].value.num.value),
+          denominator: Number(pool['share-fee'].value.den.value),
+        },
       };
     } catch (error) {
       if (error instanceof DexReadError) throw error;
-
       throw new DexReadError(
         'Failed to get pool by ID',
         DexReadErrorCode.CONTRACT_ERROR,
@@ -274,8 +294,7 @@ export class DexReadService {
           contractPrincipalCV(address0, name0),
           contractPrincipalCV(address1, name1),
         ],
-        this.contractAddress,
-        this.contractName
+        this.config.coreContract
       );
 
       if (result && result.value) {
@@ -289,8 +308,7 @@ export class DexReadService {
           contractPrincipalCV(address1, name1),
           contractPrincipalCV(address0, name0),
         ],
-        this.contractAddress,
-        this.contractName
+        this.config.coreContract
       );
 
       if (reverseResult && reverseResult.value) {
@@ -353,8 +371,8 @@ export class DexReadService {
       const result = await this.callReadOnly(
         'get-total-supply',
         [],
-        address,
-        name
+        name,
+        address
       );
 
       return BigInt(result.value);
@@ -417,16 +435,11 @@ export class DexReadService {
     amountIn: bigint
   ): Promise<SwapQuote> {
     try {
-      // First get the pool information
       const pool = await this.getPool(tokenIn, tokenOut);
-
-      // Determine if tokenIn is token0 or token1
       const isToken0 = pool.token0 === tokenIn;
       const reserveIn = isToken0 ? pool.reserve0 : pool.reserve1;
       const reserveOut = isToken0 ? pool.reserve1 : pool.reserve0;
 
-      console.log(amountIn, reserveIn, reserveOut, pool.swapFee);
-      // Call get-amount-out to calculate the output amount
       const amountOut = await this.getAmountOut(
         amountIn,
         reserveIn,
@@ -434,7 +447,6 @@ export class DexReadService {
         pool.swapFee
       );
 
-      // Calculate price impact
       const priceImpact = this.calculatePriceImpact(
         amountIn,
         amountOut,
@@ -450,7 +462,6 @@ export class DexReadService {
       };
     } catch (error) {
       if (error instanceof DexReadError) throw error;
-
       throw new DexReadError(
         'Failed to get swap quote',
         DexReadErrorCode.CONTRACT_ERROR,
@@ -659,8 +670,7 @@ export class DexReadService {
             den: uintCV(swapFee.denominator),
           }),
         ],
-        this.path2Address,
-        this.path2Name
+        this.config.path2Contract
       );
 
       if (result.error) {
@@ -703,8 +713,7 @@ export class DexReadService {
             den: uintCV(swapFee.denominator),
           }),
         ],
-        this.libraryAddress,
-        this.libraryName
+        this.config.libraryContract
       );
 
       if (result.error) {
@@ -763,8 +772,7 @@ export class DexReadService {
         uintCV(Number(minAmount0)),
         uintCV(Number(minAmount1)),
       ],
-      this.routerAddress,
-      this.routerName
+      this.config.routerContract
     );
   }
 
@@ -812,8 +820,7 @@ export class DexReadService {
           uintCV(Number(minAmount0)),
           uintCV(Number(minAmount1)),
         ],
-        this.routerAddress,
-        this.routerName
+        this.config.routerContract
       );
 
       // Extract optimal amounts from result

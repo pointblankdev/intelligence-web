@@ -1,7 +1,7 @@
 import { CoreTool } from 'ai';
 import { z } from 'zod';
 
-import { DexReadService } from '@/services/defi/univ2-dex';
+import { MultiDexReadService, DexProvider } from '@/services/defi/univ2-dex';
 
 /**
  * Response interfaces for different operation types
@@ -12,8 +12,17 @@ interface PoolData {
   token1: string;
   reserve0: string; // Stringified bigint
   reserve1: string; // Stringified bigint
+  lpToken: string;
   totalSupply: string; // Stringified bigint
   swapFee: {
+    numerator: number;
+    denominator: number;
+  };
+  protocolFee: {
+    numerator: number;
+    denominator: number;
+  };
+  shareFee: {
     numerator: number;
     denominator: number;
   };
@@ -256,6 +265,14 @@ const RemovalParams = z
  */
 const dexParamsSchema = z
   .object({
+    // Add dex provider parameter
+    dex: z
+      .enum(['CHARISMA', 'VELAR'])
+      .default('CHARISMA')
+      .describe(
+        'The DEX provider to use for operations. Defaults to CHARISMA if not specified.'
+      ),
+
     operation: z
       .enum([
         // Pool Information Operations
@@ -309,7 +326,10 @@ export const name = 'DEX-Analysis';
 export const dexTool: CoreTool<typeof dexParamsSchema, DexToolResponse> = {
   parameters: dexParamsSchema,
   description: `
-    Analysis tool for Uniswap V2-style DEX operations. All numeric values must be passed as strings to handle BigInt values.
+    Analysis tool for Uniswap V2-style DEX operations. Supports both Charisma and Velar DEXes. All numeric values must be passed as strings to handle BigInt values.
+
+    DEX Selection:
+    - Specify 'dex' parameter as either 'CHARISMA' or 'VELAR' (defaults to 'CHARISMA')
 
     Parameter Requirements:
     1. Pool IDs are strings starting from "1" 
@@ -360,7 +380,8 @@ export const dexTool: CoreTool<typeof dexParamsSchema, DexToolResponse> = {
     { abortSignal }
   ): Promise<DexToolResponse> => {
     try {
-      const service = new DexReadService();
+      // Update service instantiation to use the dex parameter
+      const service = new MultiDexReadService(args.dex as DexProvider);
 
       // Pool Information Operations
       if (args.operation === 'getNumberOfPools') {
@@ -625,8 +646,11 @@ function formatPoolData(pool: any): PoolData {
     token1: pool.token1,
     reserve0: pool.reserve0.toString(),
     reserve1: pool.reserve1.toString(),
+    lpToken: pool.lpToken,
     totalSupply: pool.totalSupply.toString(),
     swapFee: pool.swapFee,
+    protocolFee: pool.protocolFee,
+    shareFee: pool.shareFee,
   };
 }
 
