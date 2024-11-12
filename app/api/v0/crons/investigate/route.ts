@@ -7,6 +7,8 @@ import { tokenRegistryTool } from '@/tools/sips/token-registry';
 import { contractTool } from '@/tools/stacks-api/contract';
 import { transactionTool } from '@/tools/stacks-api/transaction';
 
+export const maxDuration = 300; // 5 minutes
+
 // Helper for error responses
 const errorResponse = (message: string, status: number = 400) => {
   return NextResponse.json({ success: false, error: message }, { status });
