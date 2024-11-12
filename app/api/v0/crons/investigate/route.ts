@@ -23,14 +23,13 @@ export async function GET(req: NextRequest) {
     }
     // Stream the discovery process using Claude
     const response = await generateText({
-      model: customModel('claude-3-5-haiku-20241022'),
+      model: customModel('claude-3-5-sonnet-20241022'),
       system: `You are an expert Stacks blockchain analyst. You will examine recent transactions to identify new token contracts and smart contracts that should be added to the registry.
                You will use the provided tools to investigate contracts and register them if they are valid token or important smart contracts.`,
       messages: [
         {
           role: 'user',
           content: `Lookup the last 50 transactions to find new contracts to add to the registry.
-          Do not add contracts that are already in the registry.
           Use refreshMetadata after adding new token contracts.
           `,
         },
