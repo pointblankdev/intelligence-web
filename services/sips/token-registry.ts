@@ -78,7 +78,9 @@ export class TokenRegistryService {
    * Metadata Management
    */
   async setMetadata(uri: string, metadata: any): Promise<void> {
+    const existingMetadata = await this.getMetadata(uri);
     await kv.set(`metadata:${uri}`, {
+      ...existingMetadata,
       ...metadata,
       lastUpdated: Date.now(),
     });
