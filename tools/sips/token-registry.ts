@@ -484,11 +484,14 @@ Validation Rules:
             };
           }
 
-          const metadata = await sip10Service.getTokenUriAndMetadata(
+          const { uri, metadata } = await sip10Service.getTokenUriAndMetadata(
             args.contractId.split('.')[0],
             args.contractId.split('.')[1]
           );
-          await tokenRegistry.setMetadata(args.contractId, metadata);
+          await tokenRegistry.setMetadata(args.contractId, {
+            ...metadata,
+            uri,
+          });
 
           return {
             success: true,
