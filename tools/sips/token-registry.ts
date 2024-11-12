@@ -489,6 +489,8 @@ Validation Rules:
             args.contractId.split('.')[1]
           );
           await tokenRegistry.setMetadata(args.contractId, {
+            symbol: args.contractId.split('.')[1],
+            name: args.contractId.split('.')[1],
             ...metadata,
             uri,
           });
