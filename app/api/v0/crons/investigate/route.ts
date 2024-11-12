@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
           role: 'user',
           content: `Lookup the last 20 transactions to find new contracts to add to the registry.
           Do not add contracts that are already in the registry.
-          Please complete this within 15 seconds.
+          Please complete this within 10 seconds.
           `,
         },
       ],
