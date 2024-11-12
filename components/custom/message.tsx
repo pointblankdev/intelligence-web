@@ -173,9 +173,9 @@ export const Message = ({
                         <PricesResult response={result} />
                       ) : toolName === 'Stacks-Token-Metadata' ? (
                         <MetadataResult response={result} />
-                      ) : toolName === 'Contract-Audit' ? (
-                        <ContractAuditResult response={result} />
-                      ) : toolName === 'Stacks-API-Contract' ? (
+                      ) : // ) : toolName === 'Contract-Audit' ? (
+                      //   <ContractAuditResult response={result} />
+                      toolName === 'Stacks-API-Contract' ? (
                         <SearchResult response={result} />
                       ) : toolName === 'Stacks-API-Contract' ? (
                         <ContractResult response={result} />

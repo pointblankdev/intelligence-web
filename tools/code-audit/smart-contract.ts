@@ -1,40 +1,15 @@
 import { kv } from '@vercel/kv';
-import { CoreTool, streamText } from 'ai';
+import { CoreTool, generateText, streamText } from 'ai';
 import { z } from 'zod';
 
 import { customModel } from '@/ai';
 import { ContractService } from '@/services/stacks-api/contract';
 
-import {
-  ContractAudit,
-  safeValidateAuditResponse,
-  type AuditResponse,
-} from './schema';
+import { ContractAudit } from './schema';
 import sip10Tool from '../sips/sip10';
 import { contractTool } from '../stacks-api/contract';
 import { searchTool } from '../stacks-api/search';
 import { transactionTool } from '../stacks-api/transaction';
-
-// Input parameters schema
-const contractAuditParamsSchema = z.object({
-  contractId: z
-    .string()
-    .regex(/^[A-Z0-9]+\.[A-Za-z0-9-_]+$/)
-    .describe('Contract identifier in format: <address>.<contract-name>'),
-  forceRefresh: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe('Force refresh the audit cache only when asked'),
-});
-
-// Response type
-type ContractAuditResponse = {
-  success: boolean;
-  data?: ContractAudit;
-  error?: string;
-  cached?: boolean;
-};
 
 // Cache constants
 const CACHE_KEY_PREFIX = 'contract-audit:';
@@ -43,209 +18,103 @@ const CACHE_DURATION = 60 * 60 * 24 * 365; // 1 year in seconds
 // Initialize services
 const contractService = new ContractService();
 
+// Combined parameter schema
+const contractAuditParamsSchema = z.object({
+  contractId: z
+    .string()
+    .regex(/^[A-Z0-9]+\.[A-Za-z0-9-_]+$/)
+    .describe('Contract identifier in format: <address>.<contract-name>'),
+  operation: z
+    .enum([
+      'getTokenIdentifier', // Analyze fungible tokens
+    ])
+    .describe('The specific audit operation to perform'),
+});
+
+type ContractAuditResponse = {
+  success: boolean;
+  data?: {
+    fungibleTokens: Array<{
+      tokenIdentifier: string;
+    }>;
+  };
+  error?: string;
+};
+
 export const name = 'Contract-Audit';
 export const contractAuditTool: CoreTool<
   typeof contractAuditParamsSchema,
   ContractAuditResponse
 > = {
   parameters: contractAuditParamsSchema,
-  description:
-    'Performs a comprehensive audit of a Clarity smart contract with Arcana metrics analysis' +
-    'You may need to follow up with other tools in order to complete the audit sucessfully' +
-    'After using this tool, check the token registry and update the audit data.',
+  description: `
+    Performs modular analysis of Clarity smart contracts with specialized operations:
+    
+    1. getTokenIdentifier: Identifies and analyzes fungible tokens asset identifiers defined in the contract
+    
+    Each operation requires a valid contractId in the format: <address>.<contract-name>
+  `,
 
   execute: async (args) => {
     try {
-      const cacheKey = `${CACHE_KEY_PREFIX}${args.contractId}`;
+      // Get contract info for any operation
+      const getContractInfo = async (contractId: string) => {
+        return await contractService.getContractInfo(contractId);
+      };
 
-      // Check cache first
-      if (!args.forceRefresh) {
-        const cached = await kv.get<ContractAudit>(cacheKey);
-        if (cached) {
+      // Analyze specific aspects using Claude
+      const analyzeWithClaude = async (
+        contract: any,
+        systemPrompt: string,
+        userPrompt: string
+      ) => {
+        return generateText({
+          model: customModel('claude-3-5-sonnet-20241022'),
+          system: systemPrompt,
+          messages: [
+            {
+              role: 'user',
+              content: `${userPrompt}
+              Contract source: 
+              ${contract.source_code}`,
+            },
+          ],
+          maxSteps: 1,
+        });
+      };
+
+      // Handle each operation type
+      switch (args.operation) {
+        case 'getTokenIdentifier': {
+          const contract = await getContractInfo(args.contractId);
+          const analysis = await analyzeWithClaude(
+            contract,
+            `You are a Clarity token analysis expert. Analyze ${args.contractId} source code.`,
+            `Return the token contract's "asset identifier" and nothing else.
+             It is the string immediatly following define-fungible-token.
+             e.g. (define-fungible-token <asset-identifier> <optionl-max-supply>)
+            `
+          );
           return {
             success: true,
-            data: cached,
-            cached: true,
+            data: {
+              fungibleTokens: [
+                {
+                  tokenIdentifier:
+                    analysis.text.split('::')[1] || analysis.text,
+                },
+              ],
+            },
           };
         }
-      }
 
-      const contract = await contractService.getContractInfo(args.contractId);
-
-      // Stream the analysis using Claude
-      const { fullStream } = await streamText({
-        model: customModel('claude-3-5-sonnet-20241022'),
-        system: `You are an expert Clarity smart contract auditor with deep understanding of common Stacks smart contract attack vectors.
-                You will analyze contracts and provide detailed security audits in strict JSON format with no additional text or comments.`,
-        messages: [
-          {
-            role: 'user',
-            content: `Analyze this Clarity smart contract and provide a comprehensive audit in strict JSON format.
-            For all audit your must include:
-            1. Fungible tokens and their tokenIdentifiers (ft-token definition name)
-            2. Data variables and maps defined in the contract
-            3. Function definitions and their parameters
-            4. Contract classification with detailed reasoning
-
-            Contract source:
-            ${contract.source_code}
-
-            Response must be only valid JSON matching exactly this structure with no other text or comments allowed so it can be parsed by automated tools:
-            {
-              "fungibleTokens": [{
-                "name": string,
-                "symbol": string,
-                "decimals": number,
-                "tokenIdentifier": string (required)
-                "isTransferable": boolean,
-                "isMintable": boolean,
-                "isBurnable": boolean,
-                "isLpToken": boolean,
-                "totalSupply": string (optional),
-                "maxSupply": string (optional)
-              }],
-              "variables": [{
-                "name": string,
-                "type": string,
-                "access": "public" | "private",
-                "constant": boolean,
-                "currentValue": string (optional)
-              }],
-              "maps": [{
-                "name": string,
-                "keyType": string, 
-                "valueType": string,
-                "description": string
-              }]
-              "readOnlyFunctions": [{
-                "name": string,
-                "description": string (optional),
-                "parameters": [{
-                  "name": string,
-                  "type": string,
-                  "description": string (optional)
-                }],
-                "response": {
-                  "type": string,
-                  "description": string (optional)
-                },
-                "access": "read-only",
-                "costEstimate": {
-                  "runtime": number (optional),
-                  "read_count": number (optional),
-                  "write_count": number (optional)
-                }
-              }],
-              "publicFunctions": [{
-                "name": string,
-                "description": string (optional),
-                "parameters": [{
-                  "name": string,
-                  "type": string,
-                  "description": string (optional)
-                }],
-                "response": {
-                  "type": string,
-                  "description": string (optional)
-                },
-                "access": "public",
-                "costEstimate": {
-                  "runtime": number (optional),
-                  "read_count": number (optional),
-                  "write_count": number (optional)
-                }
-              }],
-              "arcanaRecommendation": {
-                "alignment": number (0-9, based on criteria below),
-                "reasoning": string (explain alignment choice)
-              }
-            }
-
-            Alignment Scale:
-            0 = Undefined
-            1 = Lawful Constructive: Transparent governance, audited lending
-            2 = Neutral Constructive: Yield optimization, community-driven
-            3 = Chaotic Constructive: Privacy protocols, decentralized identity
-            4 = Lawful Neutral: AMMs, stablecoins, escrow
-            5 = True Neutral: Basic tokens, simple contracts
-            6 = Chaotic Neutral: Experimental DeFi
-            7 = Lawful Extractive: High-fee protocols
-            8 = Neutral Extractive: MEV, aggressive farming
-            9 = Chaotic Extractive: Malicious contracts, rug pulls`,
-          },
-        ],
-        // gotta be careful with this, vercel apis will timeout at 15 seconds
-        maxSteps: 5,
-        experimental_activeTools: [
-          'SIP010-Token',
-          'Stacks-API-Contract',
-          'Stacks-API-Search',
-          'Stacks-API-Transaction',
-        ],
-        tools: {
-          'SIP010-Token': sip10Tool,
-          'Stacks-API-Contract': contractTool,
-          'Stacks-API-Search': searchTool,
-          'Stacks-API-Transaction': transactionTool,
-        },
-        maxTokens: 5000,
-      });
-
-      let auditResult = '';
-
-      for await (const delta of fullStream) {
-        if (delta.type === 'text-delta') {
-          auditResult += delta.textDelta;
-        }
-      }
-
-      // Validate the AI response
-      let parsedResponse: AuditResponse;
-      try {
-        const jsonResponse = extractAndParseJson(auditResult);
-        console.log(jsonResponse);
-        const validationResult = safeValidateAuditResponse(jsonResponse);
-
-        if (!validationResult.success) {
-          console.error('Validation errors:', validationResult.error);
+        default:
           return {
             success: false,
-            error: 'AI generated invalid audit format',
+            error: 'Invalid operation specified',
           };
-        }
-
-        parsedResponse = validationResult.data;
-      } catch (error) {
-        console.error('JSON parse error:', error);
-        return {
-          success: false,
-          error: 'Failed to parse AI response',
-        };
       }
-
-      // Combine validated response with contract info
-      const audit: ContractAudit = {
-        contractId: args.contractId,
-        deploymentInfo: {
-          blockHeight: contract.block_height,
-          txId: contract.tx_id,
-          clarityVersion: contract.clarity_version,
-        },
-        ...parsedResponse,
-      };
-
-      // Cache the validated results
-      await kv.set(cacheKey, audit, {
-        ex: CACHE_DURATION,
-      });
-
-      return {
-        success: true,
-        data: audit,
-        cached: false,
-      };
     } catch (error) {
-      console.error('Contract audit error:', error);
       return {
         success: false,
         error:
@@ -256,74 +125,3 @@ export const contractAuditTool: CoreTool<
 };
 
 export default contractAuditTool;
-
-/**
- * Safely extracts JSON content from text by finding the outermost matching curly braces
- * @param text Text potentially containing JSON
- * @returns The extracted JSON string or null if no valid JSON structure found
- */
-export function extractJsonContent(text: string): string | null {
-  try {
-    // Remove any leading or trailing whitespace
-    const trimmed = text.trim();
-
-    // Find first opening brace
-    const firstBrace = trimmed.indexOf('{');
-    if (firstBrace === -1) return null;
-
-    let braceCount = 0;
-    let lastClosingBrace = -1;
-
-    // Iterate through the string tracking brace pairs
-    for (let i = 0; i < trimmed.length; i++) {
-      const char = trimmed[i];
-      if (char === '{') {
-        braceCount++;
-      } else if (char === '}') {
-        braceCount--;
-        if (braceCount === 0) {
-          lastClosingBrace = i;
-          // Found complete JSON object, check if there are any other JSON objects
-          const remaining = trimmed.slice(i + 1).trim();
-          if (remaining.startsWith('{')) {
-            // Found another JSON object, this might be an error
-            console.warn('Multiple JSON objects found in response');
-          }
-          break;
-        }
-      }
-    }
-
-    // If we found a matching pair of braces
-    if (lastClosingBrace !== -1) {
-      const extracted = trimmed.slice(firstBrace, lastClosingBrace + 1);
-
-      // Validate that it's actually valid JSON
-      JSON.parse(extracted); // This will throw if invalid
-
-      return extracted;
-    }
-
-    return null;
-  } catch (error) {
-    console.error('Error extracting JSON:', error);
-    return null;
-  }
-}
-
-/**
- * Safely extracts and parses JSON content
- * @param text Text potentially containing JSON
- * @returns Parsed JSON object or null if invalid
- */
-export function extractAndParseJson<T = any>(text: string): T | null {
-  try {
-    const jsonContent = extractJsonContent(text);
-    if (!jsonContent) return null;
-
-    return JSON.parse(jsonContent) as T;
-  } catch (error) {
-    console.error('Error parsing JSON:', error);
-    return null;
-  }
-}
