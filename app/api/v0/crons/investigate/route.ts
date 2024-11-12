@@ -27,12 +27,8 @@ export async function GET(req: NextRequest) {
       messages: [
         {
           role: 'user',
-          content: `Analyze 5 recent transactions to find new contracts then add the most important one to the registry.
-          
-          Look for:
-          - New token deployments
-          - LP token deployments
-          - Important protocol contracts
+          content: `Analyze 5 recent transactions to find new contracts to add to the registry. 
+          Do not add contracts that are already in the registry.
           `,
         },
       ],
