@@ -1,6 +1,7 @@
-import React from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Coins, CreditCard, Info, BarChart3, File } from 'lucide-react';
+import React from 'react';
+
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 const formatNumber = (value: string) => {
   const num = parseFloat(value);
