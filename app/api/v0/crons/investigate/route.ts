@@ -1,4 +1,4 @@
-import { streamText } from 'ai';
+import { streamText, generateText } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { customModel } from '@/ai';
@@ -20,14 +20,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' });
     }
     // Stream the discovery process using Claude
-    const { fullStream } = await streamText({
+    const response = await generateText({
       model: customModel('claude-3-5-sonnet-20241022'),
       system: `You are an expert Stacks blockchain analyst. You will examine recent transactions to identify new token contracts and smart contracts that should be added to the registry.
                You will use the provided tools to investigate contracts and register them if they are valid token or important smart contracts.`,
       messages: [
         {
           role: 'user',
-          content: `Analyze 5 recent transactions to find new contracts, research them a bit with tools, then add them to the registry.
+          content: `Analyze 5 recent transactions to find new contracts then add the most important one to the registry.
           
           Look for:
           - New token deployments
@@ -52,33 +52,12 @@ export async function GET(req: NextRequest) {
       maxTokens: 1000,
     });
 
-    let discoveryResult = '';
-    // Process the streaming response
-    for await (const delta of fullStream) {
-      if (delta.type === 'text-delta') {
-        discoveryResult += delta.textDelta;
-        console.log(delta.textDelta);
-      }
-    }
-
-    // Parse and validate the final result
-    try {
-      const result = JSON.parse(discoveryResult);
-      if (!result.discovered || !Array.isArray(result.discovered)) {
-        throw new Error('Invalid discovery result format');
-      }
-
-      // Return discovery results and registered contracts
-      return NextResponse.json({
-        success: true,
-        data: {
-          discovered: result.discovered,
-        },
-      });
-    } catch (error) {
-      console.error('Discovery result parse error:', error);
-      return errorResponse('Failed to parse discovery results', 500);
-    }
+    return NextResponse.json({
+      success: true,
+      data: {
+        response,
+      },
+    });
   } catch (error) {
     console.error('Token discovery error:', error);
     return errorResponse(
