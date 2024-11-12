@@ -38,6 +38,7 @@ const tokenRegistryParamsSchema = z
         'listPrices',
 
         // Updates
+        'refreshMetadata',
         'updateMetadata',
         'updateAudit',
         'updatePrice',
@@ -471,6 +472,29 @@ Validation Rules:
             data: {
               symbol: args.symbol,
               contractId,
+            },
+          };
+        }
+
+        case 'refreshMetadata': {
+          if (!args.contractId) {
+            return {
+              success: false,
+              error: 'Contract ID required',
+            };
+          }
+
+          const metadata = await sip10Service.getTokenUriAndMetadata(
+            args.contractId.split('.')[0],
+            args.contractId.split('.')[1]
+          );
+          await tokenRegistry.setMetadata(args.contractId, metadata);
+
+          return {
+            success: true,
+            data: {
+              contractId: args.contractId,
+              metadata: args.metadata,
             },
           };
         }
