@@ -17,11 +17,12 @@ import {
   deleteChatById,
   getChatById,
   getDocumentById,
+  getUser,
   saveChat,
   saveDocument,
   saveSuggestions,
 } from '@/db/queries';
-import { Suggestion } from '@/db/schema';
+import { Suggestion, user } from '@/db/schema';
 import { generateUUID, sanitizeResponseMessages } from '@/lib/utils';
 
 export const maxDuration = 60;
@@ -57,6 +58,11 @@ export async function POST(request: Request) {
   const activeTools = toolRegistry.getToolNames();
   if (modelId === 'gpt-4o-canvas') {
     activeTools.push(...canvasTools);
+  }
+
+  const authResponse = await auth();
+  if (authResponse?.user!.email !== 'rossragsdale@gmail.com') {
+    return new Response('System at capacity', { status: 429 });
   }
 
   const result = await streamText({
