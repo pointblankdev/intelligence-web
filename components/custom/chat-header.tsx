@@ -25,12 +25,10 @@ export function ChatHeader({ selectedModelId }: { selectedModelId: string }) {
           </Link>
         </Button>
       </BetterTooltip>
-      {isDevelopment && (
-        <ModelSelector
-          selectedModelId={selectedModelId}
-          className="order-1 md:order-2"
-        />
-      )}
+      <ModelSelector
+        selectedModelId={selectedModelId}
+        className="order-1 md:order-2"
+      />
     </header>
   );
 }
