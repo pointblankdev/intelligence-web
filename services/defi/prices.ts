@@ -226,4 +226,26 @@ export class PricesService {
       )
     );
   }
+
+  /**
+   * Fetch fresh pool data from API
+   */
+  public async getPoolData() {
+    try {
+      const response = await fetch(`${this.apiUrl}/pools?ai=true`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch pool data');
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching pool data:', error);
+      throw error;
+    }
+  }
 }

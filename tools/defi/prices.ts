@@ -15,6 +15,7 @@ const pricesParamsSchema = z.object({
       'getAllPrices',
       'refreshPrices',
       'checkStale',
+      'getPoolData',
     ])
     .describe('The price operation to perform'),
 
@@ -72,6 +73,7 @@ Available operations:
 - getAllPrices: Get all available token prices
 - refreshPrices: Force refresh all prices
 - checkStale: Check if prices for specific tokens are stale
+- getPoolData: Get all pool reserves and TVL data for balancing pools
 
 Examples:
 1. Get STX price:
@@ -157,6 +159,17 @@ Examples:
             success: true,
             data: {
               refreshed: true,
+            },
+          };
+        }
+
+        case 'getPoolData': {
+          const poolData = await pricesService.getPoolData();
+
+          return {
+            success: true,
+            data: {
+              poolData,
             },
           };
         }

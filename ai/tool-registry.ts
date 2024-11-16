@@ -1,7 +1,10 @@
 import { CoreTool } from 'ai';
 
 import { contractAuditTool } from '@/tools/code-audit/smart-contract';
+import { contractCallTool } from '@/tools/contract';
 import { pricesTool } from '@/tools/defi/prices';
+import { dexTool } from '@/tools/defi/univ2-dex';
+import { swapTool } from '@/tools/defi/univ2-swap';
 import { sip10Tool } from '@/tools/sips/sip10';
 import { tokenRegistryTool } from '@/tools/sips/token-registry';
 import { bnsTool } from '@/tools/stacks-api/bns';
@@ -9,7 +12,6 @@ import { contractTool } from '@/tools/stacks-api/contract';
 import { searchTool } from '@/tools/stacks-api/search';
 import { metadataTool } from '@/tools/stacks-api/tokens';
 import { transactionTool } from '@/tools/stacks-api/transaction';
-import { dexTool } from '@/tools/defi/univ2-dex';
 import { walletTool } from '@/tools/wallet';
 
 // We don't need to extend Tool anymore since we're using CoreTool directly
@@ -18,6 +20,8 @@ export class ToolRegistry {
 
   constructor() {
     this.tools.set('Token-Registry', tokenRegistryTool);
+    this.tools.set('DEX-Swap', swapTool);
+    this.tools.set('Contract-Call', contractCallTool);
     this.tools.set('DEX-Analysis', dexTool);
     this.tools.set('SIP010-Token', sip10Tool);
     this.tools.set('Token-Prices', pricesTool);

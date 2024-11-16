@@ -21,6 +21,7 @@ import {
 } from '@stacks/transactions';
 
 import { cache } from '../cache';
+import { ContractService } from '../contract';
 
 export enum DexProvider {
   CHARISMA = 'CHARISMA',
@@ -33,6 +34,7 @@ export interface DexConfig {
   routerContract: string;
   path2Contract: string;
   libraryContract: string;
+  shareFeeContract: string;
 }
 
 const DEX_CONFIGS: Record<DexProvider, DexConfig> = {
@@ -42,6 +44,7 @@ const DEX_CONFIGS: Record<DexProvider, DexConfig> = {
     routerContract: 'univ2-router',
     path2Contract: 'univ2-path2',
     libraryContract: 'univ2-library',
+    shareFeeContract: 'univ2-share-fee-to',
   },
   [DexProvider.VELAR]: {
     address: 'SP1Y5YSTAHZ88XYK1VPDH24GY0HPX5J4JECTMY4A1',
@@ -49,6 +52,7 @@ const DEX_CONFIGS: Record<DexProvider, DexConfig> = {
     routerContract: 'univ2-router',
     path2Contract: 'univ2-path2',
     libraryContract: 'univ2-library',
+    shareFeeContract: 'univ2-share-fee-to',
   },
 };
 
@@ -1227,3 +1231,305 @@ export class MultiDexReadService {
 
   // #endregion
 }
+
+// #region DEX WRITE SERVICE
+export class DexWriteService {
+  private readonly contractService: ContractService;
+  private readonly dexReadService: MultiDexReadService;
+
+  constructor(
+    network: 'mainnet' | 'testnet' = 'mainnet',
+    provider: DexProvider = DexProvider.CHARISMA
+  ) {
+    this.contractService = new ContractService(network);
+    this.dexReadService = new MultiDexReadService(provider);
+  }
+
+  /**
+   * Execute a token swap
+   */
+  async swap2({
+    senderKey,
+    tokenIn,
+    tokenOut,
+    amountIn,
+    amountOutMin,
+    shareFeeToAddress,
+  }: {
+    senderKey: string;
+    tokenIn: string;
+    tokenOut: string;
+    amountIn: bigint;
+    amountOutMin: bigint;
+    shareFeeToAddress: string;
+  }) {
+    const [tokenInAddress, tokenInName] = tokenIn.split('.');
+    const [tokenOutAddress, tokenOutName] = tokenOut.split('.');
+    const config = DEX_CONFIGS[DexProvider.CHARISMA];
+
+    return this.contractService.makeContractCall({
+      senderKey,
+      contractAddress: config.address,
+      contractName: 'univ2-path2',
+      functionName: 'do-swap',
+      functionArgs: [
+        uintCV(amountIn),
+        contractPrincipalCV(tokenInAddress, tokenInName),
+        contractPrincipalCV(tokenOutAddress, tokenOutName),
+        contractPrincipalCV(config.address, config.shareFeeContract),
+      ],
+    });
+  }
+
+  /**
+   * Execute a multi-hop swap using path3
+   */
+  async swap3({
+    senderKey,
+    tokenA,
+    tokenB,
+    tokenC,
+    amountIn,
+    amountOutMin,
+    shareFeeToAddress,
+  }: {
+    senderKey: string;
+    tokenA: string;
+    tokenB: string;
+    tokenC: string;
+    amountIn: bigint;
+    amountOutMin: bigint;
+    shareFeeToAddress: string;
+  }) {
+    const [tokenAAddress, tokenAName] = tokenA.split('.');
+    const [tokenBAddress, tokenBName] = tokenB.split('.');
+    const [tokenCAddress, tokenCName] = tokenC.split('.');
+    const config = DEX_CONFIGS[DexProvider.CHARISMA];
+
+    return this.contractService.makeContractCall({
+      senderKey,
+      contractAddress: config.address,
+      contractName: 'univ2-path2',
+      functionName: 'swap-3',
+      functionArgs: [
+        uintCV(amountIn),
+        uintCV(amountOutMin),
+        contractPrincipalCV(tokenAAddress, tokenAName),
+        contractPrincipalCV(tokenBAddress, tokenBName),
+        contractPrincipalCV(tokenCAddress, tokenCName),
+        contractPrincipalCV(config.address, config.shareFeeContract),
+      ],
+    });
+  }
+
+  /**
+   * Execute a multi-hop swap using path4
+   */
+  async swap4({
+    senderKey,
+    tokenA,
+    tokenB,
+    tokenC,
+    tokenD,
+    amountIn,
+    amountOutMin,
+    shareFeeToAddress,
+  }: {
+    senderKey: string;
+    tokenA: string;
+    tokenB: string;
+    tokenC: string;
+    tokenD: string;
+    amountIn: bigint;
+    amountOutMin: bigint;
+    shareFeeToAddress: string;
+  }) {
+    const [tokenAAddress, tokenAName] = tokenA.split('.');
+    const [tokenBAddress, tokenBName] = tokenB.split('.');
+    const [tokenCAddress, tokenCName] = tokenC.split('.');
+    const [tokenDAddress, tokenDName] = tokenD.split('.');
+    const config = DEX_CONFIGS[DexProvider.CHARISMA];
+
+    return this.contractService.makeContractCall({
+      senderKey,
+      contractAddress: config.address,
+      contractName: 'univ2-path2',
+      functionName: 'swap-4',
+      functionArgs: [
+        uintCV(amountIn),
+        uintCV(amountOutMin),
+        contractPrincipalCV(tokenAAddress, tokenAName),
+        contractPrincipalCV(tokenBAddress, tokenBName),
+        contractPrincipalCV(tokenCAddress, tokenCName),
+        contractPrincipalCV(tokenDAddress, tokenDName),
+        contractPrincipalCV(config.address, config.shareFeeContract),
+      ],
+    });
+  }
+
+  /**
+   * Execute a multi-hop swap using path5
+   */
+  async swap5({
+    senderKey,
+    tokenA,
+    tokenB,
+    tokenC,
+    tokenD,
+    tokenE,
+    amountIn,
+    amountOutMin,
+    shareFeeToAddress,
+  }: {
+    senderKey: string;
+    tokenA: string;
+    tokenB: string;
+    tokenC: string;
+    tokenD: string;
+    tokenE: string;
+    amountIn: bigint;
+    amountOutMin: bigint;
+    shareFeeToAddress: string;
+  }) {
+    const [tokenAAddress, tokenAName] = tokenA.split('.');
+    const [tokenBAddress, tokenBName] = tokenB.split('.');
+    const [tokenCAddress, tokenCName] = tokenC.split('.');
+    const [tokenDAddress, tokenDName] = tokenD.split('.');
+    const [tokenEAddress, tokenEName] = tokenE.split('.');
+    const config = DEX_CONFIGS[DexProvider.CHARISMA];
+
+    return this.contractService.makeContractCall({
+      senderKey,
+      contractAddress: config.address,
+      contractName: 'univ2-path2',
+      functionName: 'swap-5',
+      functionArgs: [
+        uintCV(amountIn),
+        uintCV(amountOutMin),
+        contractPrincipalCV(tokenAAddress, tokenAName),
+        contractPrincipalCV(tokenBAddress, tokenBName),
+        contractPrincipalCV(tokenCAddress, tokenCName),
+        contractPrincipalCV(tokenDAddress, tokenDName),
+        contractPrincipalCV(tokenEAddress, tokenEName),
+        contractPrincipalCV(config.address, config.shareFeeContract),
+      ],
+    });
+  }
+
+  /**
+   * Helper method for getting optimal swap path and executing trade
+   */
+  async swapWithOptimalPath({
+    senderKey,
+    tokenIn,
+    tokenOut,
+    amountIn,
+    slippageTolerance = 0.005, // 0.5% default slippage
+    shareFeeToAddress,
+  }: {
+    senderKey: string;
+    tokenIn: string;
+    tokenOut: string;
+    amountIn: bigint;
+    slippageTolerance?: number;
+    shareFeeToAddress: string;
+  }) {
+    try {
+      // First get quote to determine optimal path
+      const quote = await this.dexReadService.getSwapQuote(
+        tokenIn,
+        tokenOut,
+        amountIn
+      );
+
+      // Calculate minimum amount out based on slippage tolerance
+      const amountOutMin = BigInt(
+        Math.floor(Number(quote.amountOut) * (1 - slippageTolerance))
+      );
+
+      // Execute swap based on path length
+      switch (quote.route.length) {
+        case 2:
+          return this.swap2({
+            senderKey,
+            tokenIn: quote.route[0],
+            tokenOut: quote.route[1],
+            amountIn,
+            amountOutMin,
+            shareFeeToAddress,
+          });
+        case 3:
+          return this.swap3({
+            senderKey,
+            tokenA: quote.route[0],
+            tokenB: quote.route[1],
+            tokenC: quote.route[2],
+            amountIn,
+            amountOutMin,
+            shareFeeToAddress,
+          });
+        case 4:
+          return this.swap4({
+            senderKey,
+            tokenA: quote.route[0],
+            tokenB: quote.route[1],
+            tokenC: quote.route[2],
+            tokenD: quote.route[3],
+            amountIn,
+            amountOutMin,
+            shareFeeToAddress,
+          });
+        case 5:
+          return this.swap5({
+            senderKey,
+            tokenA: quote.route[0],
+            tokenB: quote.route[1],
+            tokenC: quote.route[2],
+            tokenD: quote.route[3],
+            tokenE: quote.route[4],
+            amountIn,
+            amountOutMin,
+            shareFeeToAddress,
+          });
+        default:
+          throw new DexReadError(
+            'Invalid route length',
+            DexReadErrorCode.INVALID_PATH,
+            { routeLength: quote.route.length }
+          );
+      }
+    } catch (error) {
+      if (error instanceof DexReadError) throw error;
+      throw new DexReadError(
+        'Failed to execute optimal path swap',
+        DexReadErrorCode.CONTRACT_ERROR,
+        error
+      );
+    }
+  }
+}
+
+// Example usage:
+/*
+const dexService = new DexWriteService('mainnet');
+
+// Direct swap
+const result = await dexService.swap({
+  senderKey: 'privateKey',
+  tokenIn: 'SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS.token-a',
+  tokenOut: 'SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS.token-b',
+  amountIn: 1000000n,
+  amountOutMin: 950000n,
+  shareFeeToAddress: 'SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS'
+});
+
+// Optimal path swap
+const optimalResult = await dexService.swapWithOptimalPath({
+  senderKey: 'privateKey',
+  tokenIn: 'SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS.token-a',
+  tokenOut: 'SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS.token-d',
+  amountIn: 1000000n,
+  slippageTolerance: 0.01, // 1% slippage
+  shareFeeToAddress: 'SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS'
+});
+*/

@@ -1,7 +1,13 @@
 import { Coins, CreditCard, Info, BarChart3, File } from 'lucide-react';
 import React from 'react';
 
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from '@/components/ui/card';
 
 const formatNumber = (value: string) => {
   const num = parseFloat(value);
@@ -183,16 +189,7 @@ export default function Sip10Display({
   }
 
   if (!response?.success || !response?.data) {
-    return (
-      <Card className="w-full max-w-md bg-red-50">
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-3 text-red-600">
-            <Info size={24} />
-            <span>{response?.error || 'Failed to load token data'}</span>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <pre>{JSON.stringify(response, null, 2)}</pre>;
   }
 
   const { data } = response;
@@ -243,7 +240,7 @@ export default function Sip10Display({
 
     case 'getBalance': {
       return (
-        <Card className="w-full max-w-md bg-gradient-to-br from-green-50 to-emerald-50">
+        <Card className="w-full max-w-md bg-gradient-to-br from-green-900 to-emerald-900">
           <CardHeader className="flex flex-row items-center gap-4">
             <CreditCard className="size-8 text-green-600" />
             <CardTitle>Token Balance</CardTitle>
@@ -304,7 +301,7 @@ export default function Sip10Display({
             return (
               <Card
                 key={index}
-                className="bg-gradient-to-br from-green-50 to-emerald-50"
+                className="bg-gradient-to-br from-green-900 to-emerald-900"
               >
                 <CardHeader>
                   <div className="flex items-center gap-2">

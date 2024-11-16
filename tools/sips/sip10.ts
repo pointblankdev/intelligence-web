@@ -125,7 +125,7 @@ export const sip10Tool: CoreTool<typeof sip10ParamsSchema, Sip10Response> = {
           }
 
           const tokensInfo = await sip10Service.batchGetTokenInfo(args.tokens);
-
+          console.log(tokensInfo);
           return {
             success: true,
             data: {

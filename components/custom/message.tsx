@@ -169,7 +169,8 @@ export const Message = ({
                           response={result}
                           operation={args.operation}
                         />
-                      ) : toolName === 'Token-Prices' ? (
+                      ) : toolName === 'Token-Prices' &&
+                        args.operation !== 'getPoolData' ? (
                         <PricesResult response={result} />
                       ) : toolName === 'Stacks-Token-Metadata' ? (
                         <MetadataResult response={result} />
