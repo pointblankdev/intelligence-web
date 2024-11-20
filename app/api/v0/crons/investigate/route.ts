@@ -21,6 +21,13 @@ export async function GET(req: NextRequest) {
     ) {
       return NextResponse.json({ success: false, error: 'Unauthorized' });
     }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        response: {},
+      },
+    });
     // Stream the discovery process using Claude
     const response = await generateText({
       model: customModel('claude-3-5-sonnet-20241022'),
