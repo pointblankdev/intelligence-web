@@ -50,7 +50,7 @@ type PricesToolResponse = {
 
 // Initialize service
 const pricesService = KraxelService.getInstance(
-  process.env.KRAXEL_API_URL || 'https://charisma.rocks/api/v0'
+  process.env.KRAXEL_API_URL || 'https://api.kraxel.io/api'
 );
 
 export const name = 'Token-Prices';
@@ -74,7 +74,7 @@ stx: SP1Y5YSTAHZ88XYK1VPDH24GY0HPX5J4JECTMY4A1.wstx
 BTC Wrappers:
 btc: SP3K8BC0PPEVCV7NZ6QSRWPQ2JE9E5B6N3PA0KBR9.token-abtc
 MEME Coins
-welsh: SP3NE50GEXFG9SZGTT51P40X2CKYSZ5CC4ZTZ7A2G.welshcorgicoin-token"
+welsh: SP3NE50GEXFG9SZGTT51P40X2CKYSZ5CC4ZTZ7A2G.welshcorgicoin-token
 leo: SP1AY6K3PQV5MRT6R4S671NWW2FRVPKM0BR162CT6.leo-token
 charisma: SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS.charisma-token
 aeusdc: SP3Y2ZSH8P7D50B0VBTSX11S7XSG24M1VB9YFQA4K.token-aeusdc

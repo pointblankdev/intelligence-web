@@ -53,17 +53,6 @@ type PoolsArray = Pool[];
 export class KraxelService {
   private static instance: KraxelService;
 
-  private readonly RETRY_ATTEMPTS = 3;
-  private readonly RETRY_DELAY = 1000; // 1 second
-
-  private readonly W_CHA_STX = 'SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS.wstx';
-  private readonly W_VELAR_STX =
-    'SP1Y5YSTAHZ88XYK1VPDH24GY0HPX5J4JECTMY4A1.wstx';
-  private readonly STX_WRAPPERS = [this.W_CHA_STX, this.W_VELAR_STX];
-
-  private readonly AEUSDC =
-    'SP31MH65V85NDTM30FJBKP4JNC39HR1ZX3CRW9Z97.token-aeusdc';
-
   constructor(
     private readonly apiUrl: string,
     private readonly fetchOptions: RequestInit = {}
