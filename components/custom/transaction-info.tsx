@@ -286,10 +286,10 @@ const AssetMovements = ({ summary }: { summary: TransactionSummary }) => {
 };
 
 // Modified AccordionTransaction component to handle pending transactions
-const AccordionTransaction = ({ tx: summary }: { tx: TransactionSummary }) => {
+const AccordionTransaction = ({ tx }: any) => {
+  let summary = tx;
+  if (summary?.tx?.tx) summary = summary.tx;
   const [isExpanded, setIsExpanded] = useState(false);
-  const isPending =
-    isMempoolTransaction(summary.tx) || summary.tx.tx_status === 'pending';
 
   const hasExpandableContent =
     summary.tx.tx_type === 'contract_call' &&
@@ -408,7 +408,7 @@ const AccordionTransaction = ({ tx: summary }: { tx: TransactionSummary }) => {
 
                         <div className="pl-6 space-y-2 mt-2">
                           {summary.tx.contract_call.function_args.map(
-                            (arg, i) => (
+                            (arg: any, i: number) => (
                               <FunctionArg key={i} arg={arg} />
                             )
                           )}
@@ -425,9 +425,11 @@ const AccordionTransaction = ({ tx: summary }: { tx: TransactionSummary }) => {
                       </div>
 
                       <div className="pl-6 space-y-2 w-full">
-                        {summary.tx.post_conditions.map((condition, i) => (
-                          <PostConditionItem key={i} condition={condition} />
-                        ))}
+                        {summary.tx.post_conditions.map(
+                          (condition: any, i: number) => (
+                            <PostConditionItem key={i} condition={condition} />
+                          )
+                        )}
                       </div>
                     </div>
                   )}
