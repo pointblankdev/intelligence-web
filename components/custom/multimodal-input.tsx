@@ -49,9 +49,9 @@ const suggestedActions = [
     action: `Give me fee estimates for a contract call based on fees paid recently. I'd like to see what fees I'd need to pay to get it in in 1 block, and within 10 blocks. Do not include transactions in the mempool that have been waiting for more than 50 stacks blocks in your calculation. Lookup recent transactions to get the fees paid if you have not already.`,
   },
   {
-    title: `Analyze recent BitFlow trading`,
-    label: 'Analyze BitFlow activity',
-    action: `Analyze recent BitFlow trading activity. BitFlow uses a multi-hop DEX to support token trading accross various Stacks DEXs. Their deployer wallet is SPQC38PW542EQJ5M11CR25P7BS1CA6QT4TBXGB3M and they have various contracts for trading different tokens. Start by looking up contract deploys from that address and then look at the transactions that interact with those contracts.`,
+    title: `Detect fraudulent contracts`,
+    label: 'Audit contracts for malicious intent',
+    action: `Analyze SPN2DVXTTXQW4CM3KKX78VMXAK50XV8ZB54WNR5H.StacksDao to detect potential fraudulent intent.`,
   },
   {
     title: `Find recent popular tokens`,

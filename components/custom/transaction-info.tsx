@@ -566,8 +566,6 @@ export function TransactionDisplay({
     );
   }
 
-  console.log(response.data);
-
   // Handle raw transaction data
   if (typeof response.data === 'string') {
     return <RawTransaction data={response.data} />;
@@ -591,16 +589,23 @@ export function TransactionDisplay({
         </div>
 
         <div className="space-y-2">
-          {response.data.results.map((tx) => (
-            <AccordionTransaction
-              key={tx.tx_id}
-              tx={createTransactionSummary(tx)}
-            />
+          {response.data.results.map((tx, id) => (
+            <AccordionTransaction key={id} tx={createTransactionSummary(tx)} />
           ))}
         </div>
       </div>
     );
   }
+
+  if (!response.data.tx_id)
+    return (
+      <div className="rounded-2xl p-4 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300">
+        <div className="flex items-center gap-2">
+          <Activity className="size-5" />
+          <span>No transactions found</span>
+        </div>
+      </div>
+    );
 
   // Handle single transaction
   return <AccordionTransaction tx={createTransactionSummary(response.data)} />;
