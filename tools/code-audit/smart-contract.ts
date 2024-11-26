@@ -1,26 +1,15 @@
-import { kv } from '@vercel/kv';
-import { CoreTool, generateText, streamText } from 'ai';
+import { CoreTool, generateText } from 'ai';
 import { z } from 'zod';
 
 import { customModel } from '@/ai';
 import { sanitizeSourceCode } from '@/lib/utils';
 import { ContractService } from '@/services/stacks-api/contract';
 
-import { ContractAudit } from './schema';
-import sip10Tool from '../sips/sip10';
-import { contractTool } from '../stacks-api/contract';
-import { searchTool } from '../stacks-api/search';
-import { transactionTool } from '../stacks-api/transaction';
-
-// Cache constants
-const CACHE_KEY_PREFIX = 'contract-audit:';
-const CACHE_DURATION = 60 * 60 * 24 * 365; // 1 year in seconds
-
 // Initialize services
 const contractService = new ContractService();
 
 // Combined parameter schema
-const contractAuditParamsSchema = z.object({
+const smartContractParamsSchema = z.object({
   contractId: z
     .string()
     .regex(/^[A-Z0-9]+\.[A-Za-z0-9-_]+$/)
@@ -33,26 +22,28 @@ const contractAuditParamsSchema = z.object({
     .describe('The specific audit operation to perform'),
 });
 
-type ContractAuditResponse = {
+type AuditResponse = {
+  analysis: string;
+};
+
+type FungibleTokenIdentifierResponse = {
+  fungibleTokens: Array<{
+    tokenIdentifier: string;
+  }>;
+};
+
+type SmartContractResponse = {
   success: boolean;
-  data?:
-    | {
-        fungibleTokens: Array<{
-          tokenIdentifier: string;
-        }>;
-      }
-    | {
-        analysis: string;
-      };
+  data?: AuditResponse | FungibleTokenIdentifierResponse;
   error?: string;
 };
 
 export const name = 'Contract-Audit';
 export const contractAuditTool: CoreTool<
-  typeof contractAuditParamsSchema,
-  ContractAuditResponse
+  typeof smartContractParamsSchema,
+  SmartContractResponse
 > = {
-  parameters: contractAuditParamsSchema,
+  parameters: smartContractParamsSchema,
   description: `
     Performs modular analysis of Clarity smart contracts with specialized operations:
     
