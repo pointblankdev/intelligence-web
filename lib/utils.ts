@@ -222,6 +222,13 @@ export function sanitizeUIMessages(messages: Array<Message>): Array<Message> {
   );
 }
 
+export const sanitizeSourceCode = (source: string): string => {
+  return source
+    .split('\n')
+    .filter((line) => !line.trim().startsWith(';;'))
+    .join(' ');
+};
+
 export function getDocumentTimestampByIndex(
   documents: Array<Document>,
   index: number

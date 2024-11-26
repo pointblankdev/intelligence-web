@@ -16,6 +16,7 @@ const errorResponse = (message: string, status: number = 400) => {
 export async function POST(req: NextRequest) {
   try {
     // Validate content type
+    console.log('executing audit tool from api');
     const contentType = req.headers.get('content-type');
     if (!contentType?.includes('application/json')) {
       return errorResponse('Content-Type must be application/json', 415);
