@@ -23,15 +23,30 @@ import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 
 const suggestedActions = [
+  // {
+  //   title: 'Get started exploring',
+  //   label: 'Lookup, create or import a wallet',
+  //   action: `Explain how to get started and what are some cool things I can do here.`,
+  // },
+  // {
+  //   title: 'What is this?',
+  //   label: 'What am I able to do here?',
+  //   action: `Who are you and how can you help me? Might be best to talk a bit about my experience with Stacks and your capabilities.`,
+  // },
   {
-    title: 'Get started exploring',
-    label: 'Lookup, create or import a wallet',
-    action: `Explain how to get started and what are some cool things I can do here.`,
+    title: `Let's view recent transactions`,
+    label: 'Recent transactions',
+    action: `Let's look at recent stacks transactions.`,
   },
   {
-    title: 'What is this?',
-    label: 'What am I able to do here?',
-    action: `Who are you and how can you help me? Might be best to talk a bit about my experience with Stacks and your capabilities.`,
+    title: `Let's inspect the mempool`,
+    label: 'Inspect mempool',
+    action: `Let's look at transactions in the mempool.`,
+  },
+  {
+    title: `Get fee estimate for contract call`,
+    label: 'Get fee estimate',
+    action: `Give me fee estimates for a contract call based on fees paid recently. I'd like to see what fees I'd need to pay to get it in in 1 block, and within 10 blocks. Do not include transactions in the mempool that have been waiting for more than 50 stacks blocks in your calculation. Lookup recent transactions to get the fees paid if you have not already.`,
   },
 ];
 
@@ -185,7 +200,7 @@ export function MultimodalInput({
       {messages.length === 0 &&
         attachments.length === 0 &&
         uploadQueue.length === 0 && (
-          <div className="grid sm:grid-cols-2 gap-2 w-full">
+          <div className="grid sm:grid-cols-3 gap-2 w-full">
             {suggestedActions.map((suggestedAction, index) => (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}

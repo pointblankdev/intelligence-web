@@ -174,9 +174,7 @@ export const Message = ({
                         <PricesResult response={result} />
                       ) : toolName === 'Stacks-Token-Metadata' ? (
                         <MetadataResult response={result} />
-                      ) : // ) : toolName === 'Contract-Audit' ? (
-                      //   <ContractAuditResult response={result} />
-                      toolName === 'Stacks-API-Contract' ? (
+                      ) : toolName === 'Stacks-API-Search' ? (
                         <SearchResult response={result} />
                       ) : toolName === 'Stacks-API-Contract' ? (
                         <ContractResult response={result} />
@@ -209,6 +207,7 @@ export const Message = ({
                         />
                       ) : (
                         <pre className="text-xs">
+                          {toolName}
                           <>{console.log(toolName, args.operation)}</>
                           {JSON.stringify(result, null, 2)}
                         </pre>

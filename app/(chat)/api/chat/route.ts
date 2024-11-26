@@ -60,10 +60,10 @@ export async function POST(request: Request) {
     activeTools.push(...canvasTools);
   }
 
-  const authResponse = await auth();
-  if (authResponse?.user!.email !== 'rossragsdale@gmail.com') {
-    return new Response('System at capacity', { status: 429 });
-  }
+  // const authResponse = await auth();
+  // if (authResponse?.user!.email !== 'rossragsdale@gmail.com') {
+  //   return new Response('System at capacity', { status: 429 });
+  // }
 
   const result = await streamText({
     model: customModel(model.apiIdentifier),

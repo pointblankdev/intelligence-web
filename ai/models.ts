@@ -46,5 +46,5 @@ export const models: Array<Model> = [
   },
 ] as const;
 
-// export const DEFAULT_MODEL_NAME: string = 'claude-3-sonnet';
-export const DEFAULT_MODEL_NAME: string = 'claude-3-haiku';
+export const DEFAULT_MODEL_NAME: string = 'claude-3-sonnet';
+// export const DEFAULT_MODEL_NAME: string = 'claude-3-haiku';
