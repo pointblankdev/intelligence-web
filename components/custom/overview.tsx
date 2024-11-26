@@ -42,7 +42,7 @@ export const Overview = () => {
         </div>
 
         <h2 className="text-2xl font-bold text-primary">
-          Welcome to Charisma Explore
+          Hello, I&apos;m your Bitcoin AI-assistant.
         </h2>
 
         <p className="text-lg">
@@ -51,18 +51,17 @@ export const Overview = () => {
           insights into your wallet activity and the broader Stacks ecosystem.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+        {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
           {features.map((feature, index) => (
             <div key={index} className="p-4 rounded-lg bg-primary/5">
               <h3 className="font-bold mb-2">{feature.title}</h3>
               <p>{feature.description}</p>
             </div>
           ))}
-        </div>
+        </div> */}
 
         <p className="text-sm text-muted-foreground">
-          Create a new wallet to start exploring and interacting with the Stacks
-          blockchain.
+          Start exploring and interacting with the Stacks blockchain.
         </p>
       </div>
     </motion.div>

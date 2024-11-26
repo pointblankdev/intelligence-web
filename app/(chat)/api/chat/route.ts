@@ -53,17 +53,20 @@ export async function POST(request: Request) {
     return new Response('Model not found', { status: 404 });
   }
 
-  const coreMessages = convertToCoreMessages(messages);
+  let coreMessages = convertToCoreMessages(messages);
   const streamingData = new StreamData();
   const activeTools = toolRegistry.getToolNames();
   if (modelId === 'gpt-4o-canvas') {
     activeTools.push(...canvasTools);
   }
 
-  const authResponse = await auth();
-  if (authResponse?.user!.email !== 'rossragsdale@gmail.com') {
-    return new Response('System at capacity', { status: 429 });
-  }
+  // const authResponse = await auth();
+  // if (authResponse?.user!.email !== 'rossragsdale@gmail.com') {
+  //   return new Response('System at capacity', { status: 429 });
+  // }
+
+  // slice coreMessage to only include the last 10 messages (save tokens?)
+  // coreMessages = coreMessages.slice(-10);
 
   const result = await streamText({
     model: customModel(model.apiIdentifier),

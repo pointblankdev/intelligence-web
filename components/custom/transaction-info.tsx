@@ -3,21 +3,18 @@ import { format } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity,
-  ArrowRightLeft,
-  BarChart2,
   ChevronDown,
   Clock,
-  Code2,
-  CreditCard,
   FileCode,
-  Hash,
   Lock,
   Send,
   Settings,
-  ShieldAlert,
-  Wallet,
 } from 'lucide-react';
 import { useState } from 'react';
+
+import MempoolStatsView, {
+  MempoolStats,
+} from './transactions/mempool-stats-view';
 
 // Core transaction types
 
@@ -110,13 +107,6 @@ interface Transaction {
   tx_result: TransactionResult;
   tx_status: string;
   tx_type: string;
-}
-
-// Different response types
-interface MempoolStats {
-  tx_count: number;
-  byte_size: number;
-  dropped_tx_count: number;
 }
 
 interface PaginatedResponse<T> {
@@ -215,34 +205,6 @@ const RawTransaction = ({ data }: { data: string }) => (
   </div>
 );
 
-const MempoolStatsView = ({ stats }: { stats: MempoolStats }) => (
-  <div className="grid grid-cols-3 gap-4">
-    <div className="p-4 rounded-lg bg-slate-100 dark:bg-slate-800">
-      <div className="flex items-center gap-2 mb-2">
-        <Activity className="size-4 text-blue-500" />
-        <span className="text-sm font-medium">Transactions</span>
-      </div>
-      <span className="text-2xl font-bold">{stats.tx_count}</span>
-    </div>
-    <div className="p-4 rounded-lg bg-slate-100 dark:bg-slate-800">
-      <div className="flex items-center gap-2 mb-2">
-        <BarChart2 className="size-4 text-green-500" />
-        <span className="text-sm font-medium">Size</span>
-      </div>
-      <span className="text-2xl font-bold">
-        {(stats.byte_size / 1024).toFixed(2)} KB
-      </span>
-    </div>
-    <div className="p-4 rounded-lg bg-slate-100 dark:bg-slate-800">
-      <div className="flex items-center gap-2 mb-2">
-        <Hash className="size-4 text-red-500" />
-        <span className="text-sm font-medium">Dropped</span>
-      </div>
-      <span className="text-2xl font-bold">{stats.dropped_tx_count}</span>
-    </div>
-  </div>
-);
-
 const getTransactionType = (tx: Transaction) => {
   if (tx.tx_type === 'contract_call') {
     return tx.contract_call?.function_name;
@@ -324,10 +286,10 @@ const AssetMovements = ({ summary }: { summary: TransactionSummary }) => {
 };
 
 // Modified AccordionTransaction component to handle pending transactions
-const AccordionTransaction = ({ tx: summary }: { tx: TransactionSummary }) => {
+const AccordionTransaction = ({ tx }: any) => {
+  let summary = tx;
+  if (summary?.tx?.tx) summary = summary.tx;
   const [isExpanded, setIsExpanded] = useState(false);
-  const isPending =
-    isMempoolTransaction(summary.tx) || summary.tx.tx_status === 'pending';
 
   const hasExpandableContent =
     summary.tx.tx_type === 'contract_call' &&
@@ -384,7 +346,7 @@ const AccordionTransaction = ({ tx: summary }: { tx: TransactionSummary }) => {
                   {getTransactionType(summary.tx)}
                 </h3>
                 {contractInfo && (
-                  <p className="text-xs font-mono text-slate-500 whitespace-nowrap truncate max-w-[6rem] sm:max-w-full">
+                  <p className="text-xs font-mono text-slate-500 whitespace-nowrap truncate max-w-24 sm:max-w-full">
                     {contractInfo}
                   </p>
                 )}
@@ -446,7 +408,7 @@ const AccordionTransaction = ({ tx: summary }: { tx: TransactionSummary }) => {
 
                         <div className="pl-6 space-y-2 mt-2">
                           {summary.tx.contract_call.function_args.map(
-                            (arg, i) => (
+                            (arg: any, i: number) => (
                               <FunctionArg key={i} arg={arg} />
                             )
                           )}
@@ -463,9 +425,11 @@ const AccordionTransaction = ({ tx: summary }: { tx: TransactionSummary }) => {
                       </div>
 
                       <div className="pl-6 space-y-2 w-full">
-                        {summary.tx.post_conditions.map((condition, i) => (
-                          <PostConditionItem key={i} condition={condition} />
-                        ))}
+                        {summary.tx.post_conditions.map(
+                          (condition: any, i: number) => (
+                            <PostConditionItem key={i} condition={condition} />
+                          )
+                        )}
                       </div>
                     </div>
                   )}
@@ -602,15 +566,13 @@ export function TransactionDisplay({
     );
   }
 
-  console.log(response.data);
-
   // Handle raw transaction data
   if (typeof response.data === 'string') {
     return <RawTransaction data={response.data} />;
   }
 
   // Handle mempool stats
-  if ('tx_count' in response.data) {
+  if ('tx_type_counts' in response.data) {
     return <MempoolStatsView stats={response.data} />;
   }
 
@@ -627,16 +589,23 @@ export function TransactionDisplay({
         </div>
 
         <div className="space-y-2">
-          {response.data.results.map((tx) => (
-            <AccordionTransaction
-              key={tx.tx_id}
-              tx={createTransactionSummary(tx)}
-            />
+          {response.data.results.map((tx, id) => (
+            <AccordionTransaction key={id} tx={createTransactionSummary(tx)} />
           ))}
         </div>
       </div>
     );
   }
+
+  if (!response.data.tx_id)
+    return (
+      <div className="rounded-2xl p-4 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300">
+        <div className="flex items-center gap-2">
+          <Activity className="size-5" />
+          <span>No transactions found</span>
+        </div>
+      </div>
+    );
 
   // Handle single transaction
   return <AccordionTransaction tx={createTransactionSummary(response.data)} />;

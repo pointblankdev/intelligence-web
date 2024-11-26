@@ -61,7 +61,7 @@ export interface AddressSearchResult extends SearchResult {
 export interface BlockSearchResult extends SearchResult {
   result: BaseResult & {
     entity_type: 'block_hash' | 'block_height';
-    metadata?: {
+    block_data: {
       canonical: boolean;
       hash: string;
       parent_block_hash: string;
@@ -71,6 +71,7 @@ export interface BlockSearchResult extends SearchResult {
       burn_block_height: number;
       miner_txid: string;
       tx_count: number;
+      height: number;
     };
   };
 }
@@ -204,7 +205,7 @@ const ContractResult = ({
               <Check className="size-4 text-green-500" />
             )}
             <span className="text-sm text-indigo-600 dark:text-indigo-400">
-              Block #{data.metadata.block_height.toLocaleString()}
+              Block #{data.metadata.block_height}
             </span>
           </div>
         </div>
@@ -369,42 +370,38 @@ const BlockResult = ({ data }: { data: BlockSearchResult['result'] }) => (
         </div>
         <div>
           <h3 className="font-medium text-blue-900 dark:text-blue-100">
-            Block {data.metadata?.burn_block_height.toLocaleString()}
+            Block {data.block_data.height}
           </h3>
-          {data.metadata?.burn_block_time_iso && (
-            <p className="text-sm text-blue-700/70 dark:text-blue-300/70">
-              {new Date(data.metadata.burn_block_time_iso).toLocaleString()}
-            </p>
-          )}
+          <p className="text-sm text-blue-700/70 dark:text-blue-300/70">
+            {new Date(data.block_data?.burn_block_time * 1000).toLocaleString()}
+          </p>
         </div>
       </div>
-      {data.metadata?.tx_count !== undefined && (
+      {data.block_data?.canonical && (
         <span className="text-sm text-blue-600 dark:text-blue-400">
-          {data.metadata.tx_count} transactions
+          Canonical
         </span>
       )}
     </div>
 
-    {data.metadata && (
+    {data.block_data && (
       <div className="space-y-2 text-sm">
         <div className="flex items-center gap-2">
           <Hash className="size-4 text-blue-600 dark:text-blue-400" />
           <span className="font-mono text-blue-900 dark:text-blue-100">
-            {data.metadata.hash}
+            {data.block_data.hash}
           </span>
         </div>
         <div className="flex items-center gap-2">
           <ArrowRight className="size-4 text-blue-600 dark:text-blue-400" />
           <span className="font-mono text-blue-900 dark:text-blue-100">
-            {data.metadata.parent_block_hash}
+            {data.block_data.parent_block_hash}
           </span>
         </div>
         <div className="mt-4 p-2 rounded-lg bg-blue-100/50 dark:bg-blue-800/50">
-          <p className="text-blue-700/70 dark:text-blue-300/70">
-            Miner Transaction
-          </p>
-          <p className="font-mono text-sm text-blue-900 dark:text-blue-100 truncate">
-            {data.metadata.miner_txid}
+          <p className="text-blue-700/70 dark:text-blue-300/70">Block Height</p>
+          <p className="font-mono text-sm text-blue-900 dark:text-blue-100">
+            {data.block_data.height}
           </p>
         </div>
       </div>
