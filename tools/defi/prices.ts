@@ -1,10 +1,10 @@
 import { CoreTool } from 'ai';
 import { z } from 'zod';
 
-import { PriceError, PricesService } from '@/services/defi/prices';
+import { PriceError } from '@/services/defi/errors';
+import { KraxelService } from '@/services/defi/kraxel';
 
-// Schema for token symbols
-const tokenSymbolSchema = z.string().min(1).max(10);
+const tokenIdentifierSchema = z.string().startsWith('SP').includes('.');
 
 // Main operation parameters schema
 const pricesParamsSchema = z.object({
@@ -20,22 +20,15 @@ const pricesParamsSchema = z.object({
     .describe('The price operation to perform'),
 
   // Parameters for single token operations
-  symbol: tokenSymbolSchema
+  token: tokenIdentifierSchema
     .optional()
-    .describe('Token symbol for single token operations'),
+    .describe('Token identifier for single token operations'),
 
   // Parameters for batch operations
-  symbols: z
-    .array(tokenSymbolSchema)
+  tokens: z
+    .array(tokenIdentifierSchema)
     .optional()
-    .describe('Array of token symbols for batch operations'),
-
-  // Optional force refresh parameter
-  forceRefresh: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe('Force refresh prices before operation'),
+    .describe('Array of tokens for batch operations'),
 });
 
 // Response types
@@ -56,8 +49,8 @@ type PricesToolResponse = {
 };
 
 // Initialize service
-const pricesService = PricesService.getInstance(
-  process.env.API_URL || 'https://charisma.rocks/api/v0'
+const pricesService = KraxelService.getInstance(
+  process.env.KRAXEL_API_URL || 'https://charisma.rocks/api/v0'
 );
 
 export const name = 'Token-Prices';
@@ -66,35 +59,46 @@ export const pricesTool: CoreTool<
   PricesToolResponse
 > = {
   parameters: pricesParamsSchema,
-  description: `Get token prices from various sources including DEX pools and external APIs.
+  description: `Get token prices and pool reserve data.
 Available operations:
 - getPrice: Get price for a single token
 - getPrices: Get prices for multiple tokens
 - getAllPrices: Get all available token prices
-- refreshPrices: Force refresh all prices
-- checkStale: Check if prices for specific tokens are stale
 - getPoolData: Get all pool reserves and TVL data for balancing pools
+
+when a user mentiones a token name, it might not be the token identifier.
+For example, map these names to these token identifiers.and only pass a token identifier to the function.
+If its not in this list, ask the user to provide you with a token identifier.
+STX wrappers:
+stx: SP1Y5YSTAHZ88XYK1VPDH24GY0HPX5J4JECTMY4A1.wstx
+BTC Wrappers:
+btc: SP3K8BC0PPEVCV7NZ6QSRWPQ2JE9E5B6N3PA0KBR9.token-abtc
+MEME Coins
+welsh: SP3NE50GEXFG9SZGTT51P40X2CKYSZ5CC4ZTZ7A2G.welshcorgicoin-token"
+leo: SP1AY6K3PQV5MRT6R4S671NWW2FRVPKM0BR162CT6.leo-token
+charisma: SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS.charisma-token
+aeusdc: SP3Y2ZSH8P7D50B0VBTSX11S7XSG24M1VB9YFQA4K.token-aeusdc
+pepe: SP1Z92MPDQEWZXW36VX71Q25HKF5K2EPCJ304F275.tokensoft-token-v4k68639zxz
+nothing: SP32AEEF6WW5Y0NMJ1S8SBSZDAY8R5J32NBZFPKKZ.nope
+DEX:
+alex: SP102V8P0F7JX67ARQ77WEA3D3CFB5XW39REDT0AM.token-alex
+velar: SP1Y5YSTAHZ88XYK1VPDH24GY0HPX5J4JECTMY4A1.velar-token
 
 Examples:
 1. Get STX price:
-   { "operation": "getPrice", "symbol": "STX" }
+   { "operation": "getPrice", "token": "SP1Y5YSTAHZ88XYK1VPDH24GY0HPX5J4JECTMY4A1.wstx" }
 
 2. Get multiple prices:
-   { "operation": "getPrices", "symbols": ["STX", "CHA", "WELSH"] }
-
-3. Force refresh all prices:
-   { "operation": "refreshPrices", "forceRefresh": true }`,
+   { "operation": "getPrices", "tokens": ["SP1Y5YSTAHZ88XYK1VPDH24GY0HPX5J4JECTMY4A1.wstx", "SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS.charisma-token"] }
+    
+   When you are aksed about market caps of certain tokens, add all reserve0ConvertUsd together if the token is the token0. if its the token1: add up all the reserve1ConvertUsd.
+   `,
 
   execute: async (args) => {
     try {
-      // Handle force refresh if requested
-      if (args.forceRefresh) {
-        await pricesService.refreshPrices();
-      }
-
       switch (args.operation) {
         case 'getPrice': {
-          if (!args.symbol) {
+          if (!args.token) {
             return {
               success: false,
               error: {
@@ -104,20 +108,17 @@ Examples:
             };
           }
 
-          const price = await pricesService.getPrice(args.symbol);
-          const isStale = pricesService.isPriceStale(args.symbol);
-
+          const price = await pricesService.getPrice(args.token);
           return {
             success: true,
             data: {
               price,
-              isStale,
             },
           };
         }
 
         case 'getPrices': {
-          if (!args.symbols?.length) {
+          if (!args.tokens?.length) {
             return {
               success: false,
               error: {
@@ -127,76 +128,22 @@ Examples:
             };
           }
 
-          const prices = await pricesService.getPrices(args.symbols);
-          const isStale = args.symbols.some((symbol) =>
-            pricesService.isPriceStale(symbol)
-          );
-
+          const prices = await pricesService.getPrices(args.tokens);
           return {
             success: true,
             data: {
               prices,
-              isStale,
             },
           };
         }
 
         case 'getAllPrices': {
-          const prices = await pricesService.getAllPrices();
+          const prices = await pricesService.getAllPools();
 
           return {
             success: true,
             data: {
               prices,
-            },
-          };
-        }
-
-        case 'refreshPrices': {
-          await pricesService.refreshPrices();
-
-          return {
-            success: true,
-            data: {
-              refreshed: true,
-            },
-          };
-        }
-
-        case 'getPoolData': {
-          const poolData = await pricesService.getPoolData();
-
-          return {
-            success: true,
-            data: {
-              poolData,
-            },
-          };
-        }
-
-        case 'checkStale': {
-          if (!args.symbols?.length) {
-            return {
-              success: false,
-              error: {
-                code: 'MISSING_PARAMETER',
-                message: 'Symbols array is required for checkStale operation',
-              },
-            };
-          }
-
-          const staleStatus = args.symbols.reduce(
-            (acc, symbol) => {
-              acc[symbol] = pricesService.isPriceStale(symbol);
-              return acc;
-            },
-            {} as Record<string, boolean>
-          );
-
-          return {
-            success: true,
-            data: {
-              prices: staleStatus,
             },
           };
         }
