@@ -24,7 +24,7 @@ export class ToolRegistry {
     // this.tools.set('Contract-Call', contractCallTool);
     // this.tools.set('DEX-Analysis', dexTool);
     this.tools.set('SIP010-Token', sip10Tool);
-    // this.tools.set('Token-Prices', pricesTool);
+    this.tools.set('Kraxel', pricesTool);
     // this.tools.set('Contract-Audit', contractAuditTool);
     this.tools.set('Stacks-Token-Metadata', metadataTool);
     this.tools.set('Stacks-Wallet', walletTool);

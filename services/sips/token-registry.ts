@@ -77,19 +77,19 @@ export class TokenRegistryService {
   /**
    * Metadata Management
    */
-  async setMetadata(uri: string, metadata: any): Promise<void> {
-    const existingMetadata = await this.getMetadata(uri);
+  async setMetadata(contractId: string, metadata: any): Promise<void> {
+    const existingMetadata = await this.getMetadata(contractId);
     let newMetadata = metadata;
     if (metadata.metadata) newMetadata = metadata.metadata;
-    await kv.set(`metadata:${uri}`, {
+    await kv.set(`metadata:${contractId}`, {
       ...existingMetadata,
       ...newMetadata,
       lastUpdated: Date.now(),
     });
   }
 
-  async getMetadata(uri: string): Promise<any | null> {
-    return kv.get(`metadata:${uri}`);
+  async getMetadata(contractId: string): Promise<any | null> {
+    return kv.get(`metadata:${contractId}`);
   }
 
   async listAllMetadata(): Promise<Array<{ uri: string; metadata: any }>> {

@@ -9,7 +9,7 @@ const tokens = {
 
 describe('Kraxel PriceService', () => {
   const pricesService = KraxelService.getInstance(
-    process.env.KRAXEL_API_URL || 'https://api.kraxel.io/api'
+    process.env.KRAXEL_API_URL || 'https://api.kraxel.io/v0'
   );
 
   describe('Pool Methods', () => {
@@ -30,4 +30,4 @@ describe('Kraxel PriceService', () => {
       console.log('Pool list', result);
     });
   });
-});
+}, 50000);

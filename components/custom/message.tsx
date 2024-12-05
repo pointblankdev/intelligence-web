@@ -11,10 +11,10 @@ import { ContractAuditResult } from './contract-audit';
 import { DexInfo } from './dex-analysis';
 import { ArbitrageInfo } from './dex-graph';
 import { DocumentToolCall, DocumentToolResult } from './document';
+import KraxelResponse from './kraxel';
 import LpRegistrationResult from './lp-registration';
 import { Markdown } from './markdown';
 import { PreviewAttachment } from './preview-attachment';
-import { PricesResult } from './prices';
 import Sip10Display from './sip10';
 import { ContractResult } from './stacks-contract';
 import { SearchResult } from './stacks-search';
@@ -169,9 +169,8 @@ export const Message = ({
                           response={result}
                           operation={args.operation}
                         />
-                      ) : toolName === 'Token-Prices' &&
-                        args.operation !== 'getPoolData' ? (
-                        <PricesResult response={result} />
+                      ) : toolName === 'Kraxel' ? (
+                        <KraxelResponse response={result} />
                       ) : toolName === 'Stacks-Token-Metadata' ? (
                         <MetadataResult response={result} />
                       ) : toolName === 'Stacks-API-Search' ? (
@@ -235,8 +234,8 @@ export const Message = ({
                         <SearchResult />
                       ) : toolName === 'Stacks-Token-Metadata' ? (
                         <MetadataResult />
-                      ) : toolName === 'Token-Prices' ? (
-                        <PricesResult />
+                      ) : toolName === 'Kraxel' ? (
+                        <KraxelResponse />
                       ) : toolName === 'Contract-Audit' ? (
                         <ContractAuditResult />
                       ) : toolName === 'DEX-Arbitrage' ? (

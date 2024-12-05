@@ -7,6 +7,7 @@ export enum PriceErrorCode {
   RATE_LIMITED = 'RATE_LIMITED',
   NETWORK_ERROR = 'NETWORK_ERROR',
   CACHE_ERROR = 'CACHE_ERROR',
+  NOT_FOUND = 'NOT_FOUND',
 }
 
 /**
