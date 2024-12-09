@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { contractAuditTool } from '@/tools/code-audit/smart-contract';
+import { auditToken } from '@/services/defi/asset-identifier';
 
 // Error response helper
 const errorResponse = (message: string, status: number = 400) => {
@@ -35,14 +35,12 @@ export async function POST(req: NextRequest) {
       return errorResponse('contractId is required', 400);
     }
 
-    body.forceRefresh = false; // Default to false
-
     // Execute contract audit tool operation
-    const result = await contractAuditTool.execute!(body, {});
+    const result = await auditToken(body.contractId);
 
     // Return response with appropriate status
     return NextResponse.json(result, {
-      status: result.success ? 200 : 400,
+      status: 200,
     });
   } catch (error) {
     console.error('Contract Audit API Error:', error);

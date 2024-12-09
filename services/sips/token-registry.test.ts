@@ -3,6 +3,7 @@ import { describe, test, it } from 'vitest';
 
 import { Sip10Service } from './sip10';
 import { TokenRegistryService } from './token-registry';
+import { ContractService } from '../stacks-api/contract';
 
 describe('Token Registry Data Explorer', () => {
   const service = new TokenRegistryService();
@@ -53,6 +54,46 @@ describe('Token Registry Data Explorer', () => {
       }
     );
     console.log(response);
+  });
+
+  test('list all tokens without an audit', async () => {
+    const tokens = await service.listAllEnrichedTokens();
+    const audits = await service.listAllAudits();
+    const tokensWithoutAudit = tokens.filter(
+      (token) => !audits.find((audit) => audit.contractId === token.contractId)
+    );
+    console.log(tokensWithoutAudit);
+  });
+
+  test('audit 1 unaudited token', async () => {
+    const tokens = await service.listAllEnrichedTokens();
+    const audits = await service.listAllAudits();
+    const tokensWithoutAudit = tokens.filter(
+      (token) => !audits.find((audit) => audit.contractId === token.contractId)
+    );
+    const tokenToAudit = tokensWithoutAudit[0];
+    console.log('Auditing:', tokenToAudit.contractId);
+    const contractService = new ContractService();
+    const { source_code } = await contractService.getContractInfo(
+      tokenToAudit.contractId
+    );
+    const tokenPattern =
+      /\(define-fungible-token\s+([A-Za-z][A-Za-z0-9-]*)\s*(?:MAXSUPPLY)?\)/;
+
+    // Test function to demonstrate usage
+    function extractTokenIdentifier(clarityCode: string) {
+      const match = tokenPattern.exec(clarityCode);
+      if (match && match[1]) {
+        return match[1];
+      }
+      return null;
+    }
+    const identifier = extractTokenIdentifier(source_code);
+    console.log('Token Identifier:', identifier);
+    await kv.set(`contract-audit:${tokenToAudit.contractId}`, {
+      fungibleTokens: [{ tokenIdentifier: identifier }],
+      timestamp: Date.now(),
+    });
   });
 
   test('Print all stored data', async () => {
