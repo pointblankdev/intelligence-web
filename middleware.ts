@@ -9,7 +9,7 @@ export const config = {
     '/',
     '/:id',
     '/api/auth',
-    '/api/chat',
+    // '/api/chat',
     '/api/document',
     '/api/files',
     '/api/history',

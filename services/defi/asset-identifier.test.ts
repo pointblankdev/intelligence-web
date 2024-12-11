@@ -68,4 +68,10 @@ describe('Token Auditing', () => {
       expect(storedAudit).toBeDefined();
     }
   }, 100000);
+
+  test('audit a specific token', async () => {
+    const contractId = 'SP3K8BC0PPEVCV7NZ6QSRWPQ2JE9E5B6N3PA0KBR9.runes-dog';
+    const result = await auditToken(contractId);
+    console.log(result);
+  });
 });
