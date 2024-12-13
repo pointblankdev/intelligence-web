@@ -1,3 +1,4 @@
+import { kv } from '@vercel/kv';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { auditToken } from '@/services/defi/asset-identifier';
@@ -37,6 +38,10 @@ export async function POST(req: NextRequest) {
 
     // Execute contract audit tool operation
     const result = await auditToken(body.contractId);
+    await kv.set(`contract-audit:${body.contractId}`, {
+      ...result,
+      timestamp: Date.now(),
+    });
 
     // Return response with appropriate status
     return NextResponse.json(result, {
