@@ -31,21 +31,24 @@ interface RawPool {
 }
 
 // Price API interfaces
-interface TokenPrice {
-  token: string;
-  price: number;
-  lastUpdated: string;
+interface PriceMap {
+  [token: string]: number;
 }
 
 interface PricesResponse {
-  timestamp: string;
-  count: number;
-  prices: TokenPrice[];
+  success: boolean;
+  data: {
+    lastUpdated: string;
+    prices: PriceMap;
+    metadata: {
+      timestamp: string;
+    };
+  };
 }
 
 interface SinglePriceResponse {
-  timestamp: string;
-  price: TokenPrice;
+  lastUpdated: string;
+  price: PriceMap;
 }
 
 // Normalized interfaces
@@ -155,6 +158,7 @@ export class KraxelService {
       ...this.fetchOptions,
       method: 'GET',
       headers: {
+        'X-Api-Key': process.env.KRAXEL_API_KEY || '',
         'Content-Type': 'application/json',
         ...this.fetchOptions.headers,
       },
@@ -196,7 +200,7 @@ export class KraxelService {
       // Update cache
       this.priceCache.set(tokenId, {
         price: data.price.price,
-        timestamp: data.timestamp,
+        timestamp: data.lastUpdated,
       });
 
       return data.price.price;
@@ -300,20 +304,20 @@ export class KraxelService {
 
     try {
       const response = await this.fetchWithErrorHandling(
-        `${this.apiUrl}/prices`
+        `${this.apiUrl}/token-prices`
       );
-      const data: PricesResponse = await response.json();
+      const { data }: PricesResponse = await response.json();
       const prices: Record<string, number> = {};
 
       // Update cache
       this.priceCache.clear();
-      this.lastPricesFetch = data.timestamp;
+      this.lastPricesFetch = data.lastUpdated;
 
-      data.prices.forEach((tokenPrice) => {
-        prices[tokenPrice.token] = tokenPrice.price;
-        this.priceCache.set(tokenPrice.token, {
-          price: tokenPrice.price,
-          timestamp: tokenPrice.lastUpdated,
+      Object.entries(data.prices).map(([token, price]) => {
+        prices[token] = price;
+        this.priceCache.set(token, {
+          price: price,
+          timestamp: data.lastUpdated,
         });
       });
 
@@ -339,10 +343,13 @@ export class KraxelService {
   private async fetchPools(): Promise<RawPool[]> {
     try {
       const response = await this.fetchWithErrorHandling(
-        `${this.apiUrl}/pools`
+        `${this.apiUrl}/enriched-pools`
       );
       const result = await response.json();
-      return result.pools;
+      return result.data
+        .filter((p: RawPool) => p.source !== 'stxcity')
+        .filter((p: RawPool) => p.source !== 'alexlab')
+        .filter((p: RawPool) => p.source !== 'velar');
     } catch (error) {
       throw new PriceError(
         'Failed to fetch pools',

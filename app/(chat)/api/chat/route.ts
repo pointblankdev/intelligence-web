@@ -91,7 +91,6 @@ export async function POST(request: Request) {
             (session?.user?.id as any) ||
             '905d5223-af43-4f29-ae34-91a293810e1c',
         };
-        console.log('chat', chat);
         await saveChat(chat);
       } catch (error) {
         console.error('Failed to save chat');
