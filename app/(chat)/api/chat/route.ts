@@ -46,9 +46,9 @@ export async function POST(request: Request) {
     session = await auth();
   } catch (error) {}
 
-  // if (!session) {
-  //   return new Response('Unauthorized', { status: 401 });
-  // }
+  if (!session) {
+    return new Response('Unauthorized', { status: 401 });
+  }
 
   const model = models.find((model) => model.id === modelId);
 
@@ -76,26 +76,26 @@ export async function POST(request: Request) {
       ...toolRegistry.getAllTools(),
     },
     onFinish: async ({ responseMessages }) => {
-      // if (session.user && session.user.id) {
-      try {
-        const responseMessagesWithoutIncompleteToolCalls =
-          sanitizeResponseMessages(responseMessages);
+      if (session.user && session.user.id) {
+        try {
+          const responseMessagesWithoutIncompleteToolCalls =
+            sanitizeResponseMessages(responseMessages);
 
-        const chat = {
-          id,
-          messages: [
-            ...coreMessages,
-            ...responseMessagesWithoutIncompleteToolCalls,
-          ],
-          userId:
-            (session?.user?.id as any) ||
-            '905d5223-af43-4f29-ae34-91a293810e1c',
-        };
-        await saveChat(chat);
-      } catch (error) {
-        console.error('Failed to save chat');
+          const chat = {
+            id,
+            messages: [
+              ...coreMessages,
+              ...responseMessagesWithoutIncompleteToolCalls,
+            ],
+            userId:
+              (session?.user?.id as any) ||
+              '905d5223-af43-4f29-ae34-91a293810e1c',
+          };
+          await saveChat(chat);
+        } catch (error) {
+          console.error('Failed to save chat');
+        }
       }
-      // }
 
       streamingData.close();
     },
