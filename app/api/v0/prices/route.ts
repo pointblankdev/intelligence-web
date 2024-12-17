@@ -9,9 +9,7 @@ interface PriceRequest {
   tokens?: string[];
 }
 
-// Cache configuration
-const CACHE_NAME = 'defi-prices-cache';
-const CACHE_REVALIDATION_TIME = 30; // seconds
+export const revalidate = 60; // revalidate every 60 seconds
 
 // Error response helper
 const errorResponse = (message: string, status: number = 400) => {
@@ -55,56 +53,12 @@ const validateRequest = (body: PriceRequest) => {
   }
 };
 
-// Generate cache key based on request body
-const generateCacheKey = (body: PriceRequest): string => {
-  switch (body.operation) {
-    case 'getPrice':
-      return `price-${body.token}`;
-    case 'getPrices':
-      return `prices-${body.tokens?.sort().join('-')}`;
-    case 'getAllPrices':
-      return 'all-prices';
-    case 'getAllPools':
-      return 'all-pools';
-    default:
-      return '';
-  }
-};
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
     // Validate request
     validateRequest(body);
-
-    // Generate cache key
-    const cacheKey = generateCacheKey(body);
-
-    // Set cache control headers
-    const headers = {
-      'Cache-Control': `max-age=${CACHE_REVALIDATION_TIME}`,
-    };
-
-    // Try to get cached response
-    const cache = await caches.open(CACHE_NAME);
-    const cachedResponse = await cache.match(new Request(cacheKey));
-
-    if (cachedResponse) {
-      const cachedData = await cachedResponse.json();
-      const cachedTime = new Date(cachedData.timestamp).getTime();
-      const now = Date.now();
-
-      // Check if cache is still valid
-      if (now - cachedTime < CACHE_REVALIDATION_TIME * 1000) {
-        return new NextResponse(JSON.stringify(cachedData), {
-          headers: {
-            'Content-Type': 'application/json',
-            ...headers,
-          },
-        });
-      }
-    }
 
     // Execute price operations
     const result = await pricesTool.execute!(body, {});
@@ -117,20 +71,7 @@ export async function POST(req: NextRequest) {
     // Create response
     const response = NextResponse.json(result, {
       status: result.success ? 200 : 400,
-      headers,
     });
-
-    // Store in cache if successful
-    if (result.success) {
-      await cache.put(
-        new Request(cacheKey),
-        new Response(JSON.stringify(result), {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        })
-      );
-    }
 
     return response;
   } catch (error) {
